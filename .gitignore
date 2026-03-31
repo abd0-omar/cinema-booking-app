@@ -7,3 +7,6 @@
 # Editors
 .idea
 .vscode/
+
+# Hurl local overrides (e.g. real JWT for development)
+hurl/vars.env

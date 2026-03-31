@@ -71,6 +71,29 @@ cargo test --all-features
 
 Each test case uses an isolated SQLite database file that is automatically cleaned up after the test completes.
 
+### Hurl (HTTP black-box)
+
+Install [Hurl](https://hurl.dev) (e.g. your OS package manager or the project’s [releases](https://github.com/Orange-OpenSource/hurl/releases)).
+
+For a predictable bearer token without configuring Trailbase, run the web server in the **test** environment with the **`test-helpers`** feature (same fixed token as Rust integration tests: `test-bearer-token`). Use a dedicated SQLite file so you do not overwrite your development database:
+
+```bash
+mkdir -p data
+APP_ENVIRONMENT=test \
+APP_DATABASE__URL="sqlite:./data/hurl.sqlite?mode=rwc" \
+cargo run -p cinema-booking-web --features test-helpers
+```
+
+Copy [`hurl/vars.env.example`](hurl/vars.env.example) to `hurl/vars.env` and adjust `base_url` if your server port differs. For a normal **development** server with real JWT verification, set `token` to a Trailbase-issued access token instead.
+
+In another terminal:
+
+```bash
+hurl --test --variables-file hurl/vars.env hurl/tasks.hurl
+```
+
+Commit `hurl/vars.env.example` only; `hurl/vars.env` is gitignored for local JWTs.
+
 [db/entities/tasks]: ./db/src/entities/tasks.rs
 [web/controllers/tasks]: ./web/src/controllers/tasks.rs
 [web/middlewares/auth]: ./web/src/middlewares/auth.rs
