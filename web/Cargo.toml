@@ -38,6 +38,9 @@ tower = { version = "0.5", features = ["util"], optional = true }
 hyper = { version = "1.0", features = ["full"], optional = true }
 validator = "0.20"
 cinema-booking-macros = { path = "../macros", optional = true }
+askama = { version = "0.15.6", features = ["derive"] }
+datastar = { version = "0.3.1", features = ["axum"] }
+async-stream = "0.3.6"
 
 [dev-dependencies]
 fake = "4.0"

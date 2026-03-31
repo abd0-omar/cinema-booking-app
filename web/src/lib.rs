@@ -18,6 +18,10 @@ pub mod middlewares;
 pub mod routes;
 /// Contains the application state definition and functionality to initialize it.
 pub mod state;
+/// Askama HTML templates.
+pub mod templates;
+/// Server-rendered pages and Datastar endpoints.
+pub mod views;
 
 /// Runs the application.
 ///

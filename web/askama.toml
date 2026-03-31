@@ -1,0 +1,5 @@
+# Askama discovers templates under `templates/` relative to this crate by default.
+# This file documents intent; default paths match [templates/cinema.html](templates/cinema.html).
+
+[general]
+dirs = ["templates"]

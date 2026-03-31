@@ -9,6 +9,9 @@ pub enum Error {
     /// Errors that can occur as a result of a data layer operation.
     #[error("Database error")]
     Database(#[from] cinema_booking_db::Error),
+    /// Askama template rendering failed.
+    #[error("Template error")]
+    Template(#[from] askama::Error),
     /// Any other error. Handled as an Internal Server Error.
     #[error("Error: {0}")]
     Other(#[from] anyhow::Error),
@@ -26,6 +29,7 @@ impl IntoResponse for Error {
             Error::Database(cinema_booking_db::Error::DbError(e)) => {
                 internal_error(e).into_response()
             }
+            Error::Template(e) => internal_error(e).into_response(),
             Error::Other(e) => internal_error(e).into_response(),
         }
     }
