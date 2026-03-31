@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use cinema_booking_store_port::{
-    Booking, BookingChangeset, BookingStatus, BookingStore, BookingStoreError,
+    Booking, BookingChangeset, BookingStatus, BookingStore, BookingStoreError, SeatHoldChangeset,
+    SeatReservationSession, SeatReservationStatus,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -15,6 +16,7 @@ pub struct InMemoryBookingStore {
 struct Inner {
     next_id: i64,
     bookings: Vec<Booking>,
+    reservations: Vec<SeatReservationSession>,
 }
 
 impl InMemoryBookingStore {
@@ -23,6 +25,7 @@ impl InMemoryBookingStore {
             inner: Arc::new(RwLock::new(Inner {
                 next_id: 1,
                 bookings: Vec::new(),
+                reservations: Vec::new(),
             })),
         }
     }
@@ -32,6 +35,21 @@ impl InMemoryBookingStore {
             b.movie_uuid == movie_uuid
                 && b.seat_uuid == seat_uuid
                 && b.status != BookingStatus::Cancelled
+        })
+    }
+
+    fn active_reservation_taken(
+        reservations: &[SeatReservationSession],
+        movie_uuid: &str,
+        seat_uuid: &str,
+    ) -> bool {
+        reservations.iter().any(|r| {
+            r.movie_uuid == movie_uuid
+                && r.seat_uuid == seat_uuid
+                && matches!(
+                    r.status,
+                    SeatReservationStatus::Held | SeatReservationStatus::Confirmed
+                )
         })
     }
 }
@@ -88,6 +106,54 @@ impl BookingStore for InMemoryBookingStore {
             .cloned()
             .collect())
     }
+
+    async fn hold(
+        &self,
+        changeset: SeatHoldChangeset,
+    ) -> Result<SeatReservationSession, BookingStoreError> {
+        changeset.validate()?;
+        let mut guard = self.inner.write().await;
+        if Self::active_reservation_taken(
+            &guard.reservations,
+            &changeset.movie_uuid,
+            &changeset.seat_uuid,
+        ) {
+            return Err(BookingStoreError::SeatUnavailable);
+        }
+
+        let session = SeatReservationSession {
+            session_uuid: Uuid::new_v4().to_string(),
+            movie_uuid: changeset.movie_uuid,
+            seat_uuid: changeset.seat_uuid,
+            user_uuid: changeset.user_uuid,
+            status: SeatReservationStatus::Held,
+        };
+        guard.reservations.push(session.clone());
+        Ok(session)
+    }
+
+    async fn confirm(
+        &self,
+        movie_uuid: &str,
+        seat_uuid: &str,
+        user_uuid: &str,
+    ) -> Result<SeatReservationSession, BookingStoreError> {
+        let mut guard = self.inner.write().await;
+        let Some(session) = guard
+            .reservations
+            .iter_mut()
+            .find(|s| s.movie_uuid == movie_uuid && s.seat_uuid == seat_uuid)
+        else {
+            return Err(BookingStoreError::SessionNotFound);
+        };
+
+        if session.user_uuid != user_uuid {
+            return Err(BookingStoreError::SessionOwnershipMismatch);
+        }
+
+        session.status = SeatReservationStatus::Confirmed;
+        Ok(session.clone())
+    }
 }
 
 #[cfg(test)]
@@ -117,5 +183,24 @@ mod tests {
 
         let err = store.book(cs).await.unwrap_err();
         assert!(matches!(err, BookingStoreError::Conflict(_)));
+    }
+
+    #[tokio::test]
+    async fn hold_confirm_and_conflict() {
+        let store = InMemoryBookingStore::new();
+        let hold = SeatHoldChangeset {
+            movie_uuid: "m1".into(),
+            seat_uuid: "s1".into(),
+            user_uuid: "u1".into(),
+        };
+
+        let created = store.hold(hold.clone()).await.unwrap();
+        assert_eq!(created.status, SeatReservationStatus::Held);
+
+        let err = store.hold(hold).await.unwrap_err();
+        assert!(matches!(err, BookingStoreError::SeatUnavailable));
+
+        let confirmed = store.confirm("m1", "s1", "u1").await.unwrap();
+        assert_eq!(confirmed.status, SeatReservationStatus::Confirmed);
     }
 }

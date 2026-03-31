@@ -1,0 +1,17 @@
+[package]
+name = "cinema-booking-store-adapter-redis"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+async-trait = "0.1"
+cinema-booking-store-port = { path = "../store-port" }
+redis = { version = "0.29", features = ["tokio-comp"] }
+serde_json = "1.0"
+tokio = { version = "1.34", features = ["sync"] }
+uuid = { version = "1.6", features = ["v4"] }
+validator = { version = "0.20", features = ["derive"] }
+
+[dev-dependencies]
+tokio = { version = "1.34", features = ["macros", "rt-multi-thread"] }

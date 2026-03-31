@@ -59,6 +59,7 @@ This project uses SQLite with optimized PRAGMA settings for performance:
 * `crates/auth-adapter-trailbase/` - Trailbase JWT verification and `trailbase-client` helpers (`cinema-booking-auth-adapter-trailbase`)
 * `crates/store-port/` - Booking persistence port (`cinema-booking-store-port`)
 * `crates/store-adapter-memory/` - In-memory `BookingStore` adapter (`cinema-booking-store-adapter-memory`)
+* `crates/store-adapter-redis/` - Redis `BookingStore` adapter for seat `hold()`/`confirm()` with TTL-backed lock semantics
 * `db/` - Database entities, migrations, and seeds
 * `cli/` - Command-line tools
 * `web/` - Web server and API controllers
@@ -72,6 +73,21 @@ cargo test --all-features
 ```
 
 Each test case uses an isolated SQLite database file that is automatically cleaned up after the test completes.
+
+`#[db_test]` test context now also exposes a Redis key namespace prefix (`context.redis_key_prefix`) and test teardown attempts scoped cleanup for that prefix (no global Redis flush). This enables Redis-backed integration checks without introducing a separate macro unless needed.
+
+### Redis hold/confirm adapter
+
+The Redis adapter (`cinema-booking-store-adapter-redis`) implements seat reservation flow on `BookingStore`:
+
+* `hold()` executes `SET seat:{movieID}:{seatID} <session-json> NX EX <ttl>` semantics.
+* `confirm()` validates ownership, updates status from `held` to `confirmed`, and calls `PERSIST` to remove TTL.
+
+Config keys:
+
+* `redis.url` / `APP_REDIS__URL` (default `redis://127.0.0.1:6379/`)
+* `redis.key_prefix` / `APP_REDIS__KEY_PREFIX`
+* `redis.hold_ttl_seconds` / `APP_REDIS__HOLD_TTL_SECONDS` (default `420`)
 
 ### Hurl (HTTP black-box)
 

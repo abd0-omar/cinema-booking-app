@@ -13,6 +13,7 @@ test-helpers = [
     "dep:serde_json",
     "dep:tower",
     "dep:hyper",
+    "dep:redis",
     "dep:cinema-booking-macros",
     "cinema-booking-auth/test-utils",
     "cinema-booking-db/test-helpers",
@@ -43,6 +44,7 @@ cookie = "0.18"
 datastar = { version = "0.3.1", features = ["axum"] }
 async-stream = "0.3.6"
 reqwest = { version = "0.12", default-features = false, features = ["json"] }
+redis = { version = "0.29", features = ["tokio-comp"], optional = true }
 
 [dev-dependencies]
 fake = "4.0"

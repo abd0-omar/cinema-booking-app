@@ -6,3 +6,8 @@
 jwt_public_key_path = "traildepot/secrets/keys/public_key.pem"
 # Required for the browser login page (`/login`): server POSTs to Trailbase `api/auth/v1/login`.
 base_url = "http://127.0.0.1:4000"
+
+[redis]
+url = "redis://127.0.0.1:6379/"
+key_prefix = "dev"
+hold_ttl_seconds = 420

@@ -24,9 +24,37 @@ pub struct Config {
     pub server: ServerConfig,
     /// the database configuration: [`DatabaseConfig`]
     pub database: DatabaseConfig,
+    /// Redis settings used by seat hold/confirm adapter flows.
+    #[serde(default)]
+    pub redis: RedisConfig,
     /// Trailbase sidecar: JWT verification and optional API base URL (see [`TrailbaseAuthConfig`]).
     #[serde(default)]
     pub trailbase: TrailbaseAuthConfig,
+}
+
+/// Configuration for Redis-backed seat hold and confirmation flows.
+///
+/// **Environment (Figment):** keys map with prefix `APP_` and nested `__`, e.g.
+/// `APP_REDIS__URL`, `APP_REDIS__KEY_PREFIX`, `APP_REDIS__HOLD_TTL_SECONDS`.
+#[derive(Deserialize, Clone, Debug)]
+#[serde(default)]
+pub struct RedisConfig {
+    /// Redis URL used by adapters and tests, e.g. `redis://127.0.0.1:6379/`.
+    pub url: String,
+    /// Optional key prefix namespace. Empty string means no prefix.
+    pub key_prefix: String,
+    /// Hold timeout in seconds; defaults to 420 (7 minutes).
+    pub hold_ttl_seconds: u64,
+}
+
+impl Default for RedisConfig {
+    fn default() -> Self {
+        Self {
+            url: "redis://127.0.0.1:6379/".to_string(),
+            key_prefix: String::new(),
+            hold_ttl_seconds: 420,
+        }
+    }
 }
 
 /// Configuration for validating Trailbase-issued JWTs and optional outbound calls to Trailbase.
@@ -41,7 +69,7 @@ pub struct Config {
 ///
 /// **Environment (Figment):** keys map with prefix `APP_` and nested `__`, e.g.
 /// `APP_TRAILBASE__JWT_PUBLIC_KEY_PATH`, `APP_TRAILBASE__JWT_PUBLIC_KEY_PEM`, `APP_TRAILBASE__BASE_URL`.
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug, Default)]
 #[serde(default)]
 pub struct TrailbaseAuthConfig {
     /// Inline PEM string (e.g. from a secret manager).
@@ -50,16 +78,6 @@ pub struct TrailbaseAuthConfig {
     pub jwt_public_key_path: Option<PathBuf>,
     /// Base URL of the Trailbase HTTP API (for the `trailbase_http_client` helper in `cinema-booking-auth-adapter-trailbase`).
     pub base_url: Option<String>,
-}
-
-impl Default for TrailbaseAuthConfig {
-    fn default() -> Self {
-        Self {
-            jwt_public_key_pem: None,
-            jwt_public_key_path: None,
-            base_url: None,
-        }
-    }
 }
 
 /// The server configuration.

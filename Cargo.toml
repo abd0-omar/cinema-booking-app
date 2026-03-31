@@ -5,6 +5,7 @@ members = [
     "crates/auth",
     "crates/auth-adapter-trailbase",
     "crates/store-adapter-memory",
+    "crates/store-adapter-redis",
     "crates/store-port",
     "db",
     "macros",

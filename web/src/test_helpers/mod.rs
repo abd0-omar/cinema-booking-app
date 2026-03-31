@@ -12,6 +12,7 @@ use cinema_booking_db::DbPool;
 use hyper::header::{HeaderMap, HeaderName};
 use std::cell::OnceCell;
 use tower::ServiceExt;
+use uuid::Uuid;
 
 /// A request that a test sends to the application.
 ///
@@ -198,6 +199,8 @@ pub struct DbTestContext {
     pub app: Router,
     /// A connection pool connected to the same database that the application that is being tested uses as well.
     pub db_pool: DbPool,
+    /// Prefix used by Redis-backed tests for isolated key namespaces.
+    pub redis_key_prefix: String,
 }
 
 /// Sets up a test and returns a [`DbTestContext`] configured for the particular test case.
@@ -212,13 +215,15 @@ pub async fn setup() -> DbTestContext {
 
     let test_db_pool = setup_db(&config.database).await;
 
-    let app_state = state::app_state_from_pool(test_db_pool.clone(), config, &Environment::Test)
-        .await;
+    let app_state =
+        state::app_state_from_pool(test_db_pool.clone(), config, &Environment::Test).await;
     let app = init_routes(app_state);
+    let redis_key_prefix = format!("db-test:{}", Uuid::new_v4());
 
     DbTestContext {
         app,
         db_pool: test_db_pool,
+        redis_key_prefix,
     }
 }
 
@@ -229,7 +234,35 @@ pub async fn setup() -> DbTestContext {
 /// This function is not invoked directly but used inside of the [`cinema_booking_macros::db_test`] attribute macro. The test context is automatically passed to test cases marked with that macro as an argument.
 #[allow(unused)]
 pub async fn teardown(context: DbTestContext) {
+    let redis_url = {
+        let init_config: OnceCell<Config> = OnceCell::new();
+        let config = init_config.get_or_init(|| load_config(&Environment::Test).unwrap());
+        config.redis.url.clone()
+    };
+    cleanup_redis_prefix(&redis_url, &context.redis_key_prefix).await;
+
     drop(context.app);
 
     teardown_db(context.db_pool).await;
+}
+
+async fn cleanup_redis_prefix(redis_url: &str, prefix: &str) {
+    if prefix.is_empty() {
+        return;
+    }
+    let Ok(client) = redis::Client::open(redis_url) else {
+        return;
+    };
+    let Ok(mut conn) = client.get_multiplexed_async_connection().await else {
+        return;
+    };
+    let pattern = format!("{prefix}:*");
+    let keys: Vec<String> = redis::cmd("KEYS")
+        .arg(pattern)
+        .query_async(&mut conn)
+        .await
+        .unwrap_or_default();
+    if !keys.is_empty() {
+        let _: Result<i64, _> = redis::cmd("DEL").arg(keys).query_async(&mut conn).await;
+    }
 }
