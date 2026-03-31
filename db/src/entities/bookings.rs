@@ -19,7 +19,7 @@ pub enum BookingStatus {
 }
 
 /// A seat booking for a movie, owned by a user.
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Debug, Deserialize, Clone)]
 pub struct Booking {
     /// The internal id of the record (aliases rowid for speed).
     pub id: i64,

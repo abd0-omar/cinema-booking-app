@@ -581,6 +581,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cinema-booking-store-memory"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cinema-booking-store",
+ "tokio",
+ "uuid",
+ "validator",
+]
+
+[[package]]
 name = "cinema-booking-trailbase"
 version = "0.0.1"
 dependencies = [

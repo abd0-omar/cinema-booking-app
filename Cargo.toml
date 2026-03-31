@@ -6,6 +6,7 @@ members = [
     "db",
     "macros",
     "store",
+    "store-memory",
     "trailbase-adapter",
     "web",
 ]
