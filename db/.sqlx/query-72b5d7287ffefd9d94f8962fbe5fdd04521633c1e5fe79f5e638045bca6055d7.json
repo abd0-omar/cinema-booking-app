@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, uuid, name FROM users WHERE token = ?1",
+  "query": "SELECT id as \"id!\", uuid, name FROM users WHERE token = ?1",
   "describe": {
     "columns": [
       {
-        "name": "id",
+        "name": "id!",
         "ordinal": 0,
         "type_info": "Integer"
       },
@@ -28,5 +28,5 @@
       false
     ]
   },
-  "hash": "78a23038b3b6b89fe9e24db62d02b61f3e3be187f6187d745e323f722e4270bd"
+  "hash": "72b5d7287ffefd9d94f8962fbe5fdd04521633c1e5fe79f5e638045bca6055d7"
 }

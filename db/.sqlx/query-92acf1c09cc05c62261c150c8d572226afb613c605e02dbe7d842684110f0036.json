@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, uuid, movie_uuid, seat_uuid, user_uuid, status as \"status: BookingStatus\" FROM bookings",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "uuid",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "movie_uuid",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "seat_uuid",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_uuid",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "status: BookingStatus",
+        "ordinal": 5,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "92acf1c09cc05c62261c150c8d572226afb613c605e02dbe7d842684110f0036"
+}

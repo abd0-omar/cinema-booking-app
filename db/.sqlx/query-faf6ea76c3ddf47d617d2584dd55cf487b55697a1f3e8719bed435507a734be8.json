@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, uuid, description FROM tasks WHERE uuid = ?1",
+  "query": "SELECT id as \"id!\", uuid, name FROM users WHERE uuid = ?1",
   "describe": {
     "columns": [
       {
-        "name": "id",
+        "name": "id!",
         "ordinal": 0,
         "type_info": "Integer"
       },
@@ -14,7 +14,7 @@
         "type_info": "Text"
       },
       {
-        "name": "description",
+        "name": "name",
         "ordinal": 2,
         "type_info": "Text"
       }
@@ -28,5 +28,5 @@
       false
     ]
   },
-  "hash": "a804ff897aacb79e7575857132ef94b4a3996b23f3ecf53dd299bc80a14b5893"
+  "hash": "faf6ea76c3ddf47d617d2584dd55cf487b55697a1f3e8719bed435507a734be8"
 }
