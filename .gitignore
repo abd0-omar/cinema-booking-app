@@ -10,3 +10,4 @@
 
 # Hurl local overrides (e.g. real JWT for development)
 hurl/vars.env
+hurl/vars.trailbase.env

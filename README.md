@@ -94,6 +94,18 @@ hurl --test --variables-file hurl/vars.env hurl/tasks.hurl
 
 Commit `hurl/vars.env.example` only; `hurl/vars.env` is gitignored for local JWTs.
 
+### Hurl with Trailbase auth
+
+To exercise **real** JWT verification (same path as production), run [Trailbase](https://trailbase.io) and cinema-booking with the sidecar’s **public key PEM** configured (`trailbase.jwt_public_key_path` / `APP_TRAILBASE__JWT_PUBLIC_KEY_*`). Use normal **development** (or production) environment — not `APP_ENVIRONMENT=test` and not the `test-helpers` feature.
+
+Copy [`hurl/vars.trailbase.env.example`](hurl/vars.trailbase.env.example) to `hurl/vars.trailbase.env` and set `trailbase_url`, `api_base_url`, and `trailbase_email` / `trailbase_password`. For a **new local** Trailbase data directory, the first admin is `admin@localhost` with a **random password printed once** in Trailbase’s logs (not `secret` unless you set it, e.g. `trail --data-dir ./traildepot user change-password admin@localhost '…'`). Hosted demos may document fixed credentials; use those for that deployment.
+
+The file [`hurl/tasks_trailbase.hurl`](hurl/tasks_trailbase.hurl) calls `POST /api/auth/v1/login` on Trailbase (JSON body), captures `auth_token`, then creates, reads, and deletes a task on cinema-booking using `Authorization: Bearer <auth_token>`. Accounts with **TOTP/MFA** enabled will get **403** on login until you use the MFA login flow instead.
+
+```bash
+hurl --test --variables-file hurl/vars.trailbase.env hurl/tasks_trailbase.hurl
+```
+
 [db/entities/tasks]: ./db/src/entities/tasks.rs
 [web/controllers/tasks]: ./web/src/controllers/tasks.rs
 [web/middlewares/auth]: ./web/src/middlewares/auth.rs
