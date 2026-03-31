@@ -8,16 +8,14 @@ mod claims;
 
 use cinema_booking_auth::{AccessTokenVerifier, AuthError, Principal};
 use claims::{AuthTokenJwtClaims, TRAILBASE_AUTH_TOKEN_TYPE};
-use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use thiserror::Error;
 use trailbase_client::Client;
 
 pub use trailbase_client;
 
 /// Builds a [`Client`] for the given Trailbase base URL (no stored tokens).
-pub fn trailbase_http_client(
-    base_url: impl AsRef<str>,
-) -> Result<Client, trailbase_client::Error> {
+pub fn trailbase_http_client(base_url: impl AsRef<str>) -> Result<Client, trailbase_client::Error> {
     Client::new(base_url.as_ref(), None)
 }
 

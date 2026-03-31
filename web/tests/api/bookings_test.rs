@@ -1,11 +1,9 @@
-use fake::{Fake, Faker};
-use googletest::prelude::*;
-use cinema_booking_db::entities::bookings::{
-    self, BookingChangeset, BookingStatus,
-};
+use cinema_booking_db::entities::bookings::{self, BookingChangeset, BookingStatus};
 use cinema_booking_db::test_helpers::users::{create as create_user, UserChangeset};
 use cinema_booking_db::Error;
 use cinema_booking_macros::db_test;
+use fake::{Fake, Faker};
+use googletest::prelude::*;
 use uuid::Uuid;
 
 async fn seed_user_uuid(pool: &cinema_booking_db::DbPool) -> String {
@@ -30,10 +28,7 @@ async fn test_create_rejects_invalid_changeset(
 
     let result = bookings::create(changeset, &context.db_pool).await;
     assert_that!(result, err(anything()));
-    assert!(matches!(
-        result.unwrap_err(),
-        Error::ValidationError(_)
-    ));
+    assert!(matches!(result.unwrap_err(), Error::ValidationError(_)));
 }
 
 #[db_test]
@@ -126,12 +121,7 @@ async fn test_update_not_found(context: &cinema_booking_web::test_helpers::DbTes
     let mut changeset: BookingChangeset = Faker.fake();
     changeset.user_uuid = user_uuid;
 
-    let result = bookings::update(
-        &Uuid::new_v4().to_string(),
-        changeset,
-        &context.db_pool,
-    )
-    .await;
+    let result = bookings::update(&Uuid::new_v4().to_string(), changeset, &context.db_pool).await;
     assert!(matches!(result, Err(Error::NoRecordFound)));
 }
 

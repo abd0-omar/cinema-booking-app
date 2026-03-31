@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Context};
-use clap::{Parser, Subcommand};
-use guppy::{Version, VersionReq};
 use cinema_booking_cli::util::ui::UI;
 use cinema_booking_config::DatabaseConfig;
 use cinema_booking_config::{load_config, parse_env, Config, Environment};
+use clap::{Parser, Subcommand};
+use guppy::{Version, VersionReq};
 use sqlx::sqlite::{
     SqliteAutoVacuum, SqliteConnectOptions, SqliteConnection, SqliteJournalMode, SqliteSynchronous,
 };

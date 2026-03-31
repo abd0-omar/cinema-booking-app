@@ -6,9 +6,7 @@ use sqlx::Sqlite;
 use validator::Validate;
 
 /// Lifecycle state of a booking.
-#[derive(
-    Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash, sqlx::Type,
-)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash, sqlx::Type)]
 #[cfg_attr(feature = "test-helpers", derive(Dummy))]
 #[serde(rename_all = "lowercase")]
 #[sqlx(rename_all = "lowercase")]

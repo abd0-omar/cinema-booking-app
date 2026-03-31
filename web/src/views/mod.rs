@@ -76,7 +76,10 @@ pub async fn login_get(Query(q): Query<LoginQuery>) -> Result<Html<String>, Erro
 }
 
 /// `POST /login` — Proxies to Trailbase `POST /api/auth/v1/login`, sets session cookie on success.
-pub async fn login_post(State(state): State<SharedAppState>, Form(form): Form<LoginForm>) -> Response {
+pub async fn login_post(
+    State(state): State<SharedAppState>,
+    Form(form): Form<LoginForm>,
+) -> Response {
     let Some(ref base_url) = state.trailbase_base_url else {
         return (
             StatusCode::SERVICE_UNAVAILABLE,
@@ -177,7 +180,10 @@ pub async fn signup_get(Query(q): Query<SignupQuery>) -> Result<Html<String>, Er
 }
 
 /// `POST /signup` — Proxies to Trailbase `POST /api/auth/v1/register`.
-pub async fn signup_post(State(state): State<SharedAppState>, Form(form): Form<SignupForm>) -> Response {
+pub async fn signup_post(
+    State(state): State<SharedAppState>,
+    Form(form): Form<SignupForm>,
+) -> Response {
     if form.password != form.password_repeat {
         return redirect_signup_error("mismatch");
     }
@@ -190,10 +196,7 @@ pub async fn signup_post(State(state): State<SharedAppState>, Form(form): Form<S
             .into_response();
     };
 
-    let register_url = format!(
-        "{}/api/auth/v1/register",
-        base_url.trim_end_matches('/')
-    );
+    let register_url = format!("{}/api/auth/v1/register", base_url.trim_end_matches('/'));
 
     let http = match reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
@@ -233,9 +236,7 @@ pub async fn signup_post(State(state): State<SharedAppState>, Form(form): Form<S
 
     if matches!(
         status,
-        HttpStatus::UNAUTHORIZED
-            | HttpStatus::UNPROCESSABLE_ENTITY
-            | HttpStatus::BAD_REQUEST
+        HttpStatus::UNAUTHORIZED | HttpStatus::UNPROCESSABLE_ENTITY | HttpStatus::BAD_REQUEST
     ) {
         return redirect_signup_error("policy");
     }
@@ -247,7 +248,9 @@ pub async fn signup_post(State(state): State<SharedAppState>, Form(form): Form<S
 fn signup_error_display(code: Option<&str>) -> Option<&'static str> {
     match code {
         Some("mismatch") => Some("Passwords do not match."),
-        Some("email") => Some("Could not send verification email. Check Trailbase mail settings or try again later."),
+        Some("email") => Some(
+            "Could not send verification email. Check Trailbase mail settings or try again later.",
+        ),
         Some("policy") => Some("Password or email did not meet Trailbase requirements."),
         Some("failed") => Some("Registration failed. Try again later."),
         _ => None,

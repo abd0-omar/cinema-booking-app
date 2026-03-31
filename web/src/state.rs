@@ -1,8 +1,8 @@
 use anyhow::Context;
 use cinema_booking_auth::AccessTokenVerifier;
+use cinema_booking_auth_adapter_trailbase::TrailbaseJwtVerifier;
 use cinema_booking_config::{Config, Environment};
 use cinema_booking_db::{connect_pool, DbPool};
-use cinema_booking_auth_adapter_trailbase::TrailbaseJwtVerifier;
 use std::sync::Arc;
 
 /// The application's state that is available in [`crate::controllers`] and [`crate::middlewares`].
@@ -81,12 +81,7 @@ async fn build_access_token_verifier(
     let pem = if let Some(path) = &config.trailbase.jwt_public_key_path {
         tokio::fs::read_to_string(path)
             .await
-            .with_context(|| {
-                format!(
-                    "read trailbase JWT public key PEM from {}",
-                    path.display()
-                )
-            })?
+            .with_context(|| format!("read trailbase JWT public key PEM from {}", path.display()))?
     } else if let Some(pem) = &config.trailbase.jwt_public_key_pem {
         pem.clone()
     } else {

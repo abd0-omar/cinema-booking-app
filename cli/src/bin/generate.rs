@@ -1,11 +1,11 @@
 use anyhow::{anyhow, Context};
+use cinema_booking_cli::util::ui::UI;
 use clap::{Parser, Subcommand};
 use cruet::{
     case::{snake::to_snake_case, to_class_case},
     string::{pluralize::to_plural, singularize::to_singular},
 };
 use guppy::{graph::PackageGraph, MetadataCommand};
-use cinema_booking_cli::util::ui::UI;
 use liquid::Template;
 use regex::Regex;
 use std::collections::HashMap;

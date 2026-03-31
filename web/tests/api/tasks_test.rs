@@ -2,13 +2,13 @@ use axum::{
     body::Body,
     http::{self, Method},
 };
-use fake::{Fake, Faker};
-use googletest::prelude::*;
 use cinema_booking_db::entities::tasks::{
     create as create_task, load as load_task, load_all as load_tasks, Task, TaskChangeset,
 };
 use cinema_booking_macros::db_test;
 use cinema_booking_web::test_helpers::{BodyExt, DbTestContext, RouterExt};
+use fake::{Fake, Faker};
+use googletest::prelude::*;
 use hyper::StatusCode;
 use serde_json::json;
 use uuid::Uuid;
