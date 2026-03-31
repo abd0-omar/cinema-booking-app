@@ -48,7 +48,7 @@ pub struct TrailbaseAuthConfig {
     pub jwt_public_key_pem: Option<String>,
     /// Path to a PEM file on disk.
     pub jwt_public_key_path: Option<PathBuf>,
-    /// Base URL of the Trailbase HTTP API (for the `trailbase_http_client` helper in `cinema-booking-trailbase`).
+    /// Base URL of the Trailbase HTTP API (for the `trailbase_http_client` helper in `cinema-booking-auth-adapter-trailbase`).
     pub base_url: Option<String>,
 }
 

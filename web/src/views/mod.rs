@@ -10,7 +10,7 @@ use axum::extract::{Form, Query, State};
 use axum::http::{header, HeaderValue, StatusCode};
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{Html, IntoResponse, Redirect, Response};
-use cinema_booking_trailbase::trailbase_client::Error as TrailbaseClientError;
+use cinema_booking_auth_adapter_trailbase::trailbase_client::Error as TrailbaseClientError;
 use cookie::time::Duration as CookieDuration;
 use cookie::{Cookie, SameSite};
 use datastar::{axum::ReadSignals, prelude::PatchElements};
@@ -85,7 +85,7 @@ pub async fn login_post(State(state): State<SharedAppState>, Form(form): Form<Lo
             .into_response();
     };
 
-    let client = match cinema_booking_trailbase::trailbase_http_client(base_url) {
+    let client = match cinema_booking_auth_adapter_trailbase::trailbase_http_client(base_url) {
         Ok(c) => c,
         Err(e) => {
             tracing::error!(?e, "trailbase_http_client");

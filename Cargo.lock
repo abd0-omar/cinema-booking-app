@@ -518,6 +518,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cinema-booking-auth-adapter-trailbase"
+version = "0.0.1"
+dependencies = [
+ "cinema-booking-auth",
+ "jsonwebtoken",
+ "serde",
+ "thiserror 2.0.18",
+ "trailbase-client",
+]
+
+[[package]]
 name = "cinema-booking-cli"
 version = "0.0.1"
 dependencies = [
@@ -572,34 +583,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "cinema-booking-store"
+name = "cinema-booking-store-adapter-memory"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "cinema-booking-db",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "cinema-booking-store-memory"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "cinema-booking-store",
+ "cinema-booking-store-port",
  "tokio",
  "uuid",
  "validator",
 ]
 
 [[package]]
-name = "cinema-booking-trailbase"
-version = "0.0.1"
+name = "cinema-booking-store-port"
+version = "0.1.0"
 dependencies = [
- "cinema-booking-auth",
- "jsonwebtoken",
- "serde",
+ "async-trait",
+ "cinema-booking-db",
  "thiserror 2.0.18",
- "trailbase-client",
 ]
 
 [[package]]
@@ -611,10 +611,10 @@ dependencies = [
  "async-stream",
  "axum",
  "cinema-booking-auth",
+ "cinema-booking-auth-adapter-trailbase",
  "cinema-booking-config",
  "cinema-booking-db",
  "cinema-booking-macros",
- "cinema-booking-trailbase",
  "cinema-booking-web",
  "cookie",
  "datastar",

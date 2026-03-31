@@ -1,12 +1,12 @@
 [package]
-name = "cinema-booking-store-memory"
+name = "cinema-booking-store-adapter-memory"
 version = "0.1.0"
 edition = "2021"
 publish = false
 
 [dependencies]
 async-trait = "0.1"
-cinema-booking-store = { path = "../store" }
+cinema-booking-store-port = { path = "../store-port" }
 tokio = { version = "1.34", features = ["sync"] }
 uuid = { version = "1.6", features = ["v4"] }
 validator = { version = "0.20", features = ["derive"] }

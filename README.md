@@ -2,7 +2,7 @@
 
 This is a [Gerust](https://gerust.rs) project.
 
-The example application implements a simple tasks management system. [Tasks][db/entities/tasks] are stored in SQLite and can be [created, read, updated, and deleted][web/controllers/tasks] via the web interface. Mutating operations [require a Trailbase-issued JWT][web/middlewares/auth] (`Authorization: Bearer …`) or a session cookie set by **`POST /login`**: run [Trailbase](https://trailbase.io) as a sidecar, copy its Ed25519 public PEM into config (`trailbase.jwt_public_key_path` or `jwt_public_key_pem`), and set **`trailbase.base_url`** (e.g. `http://127.0.0.1:4000`) so the login page can call Trailbase’s `/api/auth/v1/login`. **`POST /signup`** registers a user via Trailbase’s `/api/auth/v1/register`; email verification and password rules follow your Trailbase configuration. You can also obtain tokens manually from those auth routes. Integration tests use a fixed bearer token via the `test-helpers` build. See `auth/`, `trailbase-adapter/`, and `TrailbaseAuthConfig` in `config`.
+The example application implements a simple tasks management system. [Tasks][db/entities/tasks] are stored in SQLite and can be [created, read, updated, and deleted][web/controllers/tasks] via the web interface. Mutating operations [require a Trailbase-issued JWT][web/middlewares/auth] (`Authorization: Bearer …`) or a session cookie set by **`POST /login`**: run [Trailbase](https://trailbase.io) as a sidecar, copy its Ed25519 public PEM into config (`trailbase.jwt_public_key_path` or `jwt_public_key_pem`), and set **`trailbase.base_url`** (e.g. `http://127.0.0.1:4000`) so the login page can call Trailbase’s `/api/auth/v1/login`. **`POST /signup`** registers a user via Trailbase’s `/api/auth/v1/register`; email verification and password rules follow your Trailbase configuration. You can also obtain tokens manually from those auth routes. Integration tests use a fixed bearer token via the `test-helpers` build. See `crates/auth/`, `crates/auth-adapter-trailbase/`, and `TrailbaseAuthConfig` in `config`.
 
 ## Prerequisites
 
@@ -55,8 +55,10 @@ This project uses SQLite with optimized PRAGMA settings for performance:
 ## Project Structure
 
 * `config/` - Application configuration
-* `auth/` - Auth domain traits and types (`cinema-booking-auth`)
-* `trailbase-adapter/` - Trailbase JWT verification and `trailbase-client` helpers (`cinema-booking-trailbase`)
+* `crates/auth/` - Auth domain traits and types (`cinema-booking-auth`)
+* `crates/auth-adapter-trailbase/` - Trailbase JWT verification and `trailbase-client` helpers (`cinema-booking-auth-adapter-trailbase`)
+* `crates/store-port/` - Booking persistence port (`cinema-booking-store-port`)
+* `crates/store-adapter-memory/` - In-memory `BookingStore` adapter (`cinema-booking-store-adapter-memory`)
 * `db/` - Database entities, migrations, and seeds
 * `cli/` - Command-line tools
 * `web/` - Web server and API controllers

@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use cinema_booking_store::{
+use cinema_booking_store_port::{
     Booking, BookingChangeset, BookingStatus, BookingStore, BookingStoreError,
 };
 use std::sync::Arc;

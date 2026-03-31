@@ -2,7 +2,7 @@ use anyhow::Context;
 use cinema_booking_auth::AccessTokenVerifier;
 use cinema_booking_config::{Config, Environment};
 use cinema_booking_db::{connect_pool, DbPool};
-use cinema_booking_trailbase::TrailbaseJwtVerifier;
+use cinema_booking_auth_adapter_trailbase::TrailbaseJwtVerifier;
 use std::sync::Arc;
 
 /// The application's state that is available in [`crate::controllers`] and [`crate::middlewares`].

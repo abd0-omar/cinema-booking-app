@@ -4,7 +4,7 @@ This crate implements the application's web interface. It contains controllers a
 
 ## Application state
 
-The code for defining the application state and creating a fresh state when the application boots is in _[src/state.rs](./src/state.rs)_. The state holds a database pool and an [`AccessTokenVerifier`](../../auth/src/lib.rs) (Trailbase JWT in production; fixed token in `test-helpers` + test env).
+The code for defining the application state and creating a fresh state when the application boots is in _[src/state.rs](./src/state.rs)_. The state holds a database pool and an [`AccessTokenVerifier`](../../crates/auth/src/lib.rs) (Trailbase JWT in production; fixed token in `test-helpers` + test env).
 
 ## Routing
 
