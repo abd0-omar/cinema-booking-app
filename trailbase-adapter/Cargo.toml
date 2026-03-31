@@ -1,0 +1,12 @@
+[package]
+name = "cinema-booking-trailbase"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+[dependencies]
+cinema-booking-auth = { path = "../auth" }
+jsonwebtoken = { version = "10", default-features = false, features = ["rust_crypto", "use_pem"] }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+trailbase-client = "0.7"

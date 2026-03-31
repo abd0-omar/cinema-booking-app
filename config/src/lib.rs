@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fmt::{Display, Formatter};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::PathBuf;
 use tracing::info;
 
 /// The application configuration.
@@ -23,7 +24,42 @@ pub struct Config {
     pub server: ServerConfig,
     /// the database configuration: [`DatabaseConfig`]
     pub database: DatabaseConfig,
-    // add your config settings here…
+    /// Trailbase sidecar: JWT verification and optional API base URL (see [`TrailbaseAuthConfig`]).
+    #[serde(default)]
+    pub trailbase: TrailbaseAuthConfig,
+}
+
+/// Configuration for validating Trailbase-issued JWTs and optional outbound calls to Trailbase.
+///
+/// Run Trailbase as a **separate process/container** (sidecar). This app only needs the Ed25519
+/// **public** key PEM to verify `Authorization: Bearer` tokens; it does not call Trailbase on each
+/// request for auth.
+///
+/// **Obtaining the PEM:** copy `public_key.pem` from the Trailbase instance data directory, or
+/// export it once from the admin UI (public key card). The admin HTTP route is authenticated—do not
+/// rely on fetching it automatically from production.
+///
+/// **Environment (Figment):** keys map with prefix `APP_` and nested `__`, e.g.
+/// `APP_TRAILBASE__JWT_PUBLIC_KEY_PATH`, `APP_TRAILBASE__JWT_PUBLIC_KEY_PEM`, `APP_TRAILBASE__BASE_URL`.
+#[derive(Deserialize, Clone, Debug)]
+#[serde(default)]
+pub struct TrailbaseAuthConfig {
+    /// Inline PEM string (e.g. from a secret manager).
+    pub jwt_public_key_pem: Option<String>,
+    /// Path to a PEM file on disk.
+    pub jwt_public_key_path: Option<PathBuf>,
+    /// Base URL of the Trailbase HTTP API (for the `trailbase_http_client` helper in `cinema-booking-trailbase`).
+    pub base_url: Option<String>,
+}
+
+impl Default for TrailbaseAuthConfig {
+    fn default() -> Self {
+        Self {
+            jwt_public_key_pem: None,
+            jwt_public_key_path: None,
+            base_url: None,
+        }
+    }
 }
 
 /// The server configuration.

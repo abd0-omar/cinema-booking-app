@@ -6,12 +6,11 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use cinema_booking_db::entities::users;
 use tracing::Span;
 
-/// Authenticates an incoming request based on an auth token.
+/// Authenticates an incoming request using a Trailbase-style JWT in `Authorization: Bearer …`.
 ///
-/// This looks for a token in the `Authorization` header. If no token is present or no user exists with that token (see [`cinema_booking_db::entities::users::load_with_token`]), a 401 response code is returned and the request is not processed further.
+/// On success, inserts [`cinema_booking_auth::Principal`] into request extensions for downstream handlers.
 #[tracing::instrument(skip_all, fields(rejection_reason = tracing::field::Empty))]
 pub async fn auth(
     State(app_state): State<SharedAppState>,
@@ -30,20 +29,30 @@ pub async fn auth(
         return Err(StatusCode::UNAUTHORIZED);
     };
 
-    match users::load_with_token(auth_header, &app_state.db_pool).await {
-        Ok(Some(current_user)) => {
-            req.extensions_mut().insert(current_user);
+    let jwt = parse_bearer_token(auth_header).ok_or_else(|| {
+        log_rejection_reason("Malformed bearer token");
+        StatusCode::UNAUTHORIZED
+    })?;
+
+    match app_state.access_token_verifier.verify_bearer_token(jwt) {
+        Ok(principal) => {
+            req.extensions_mut().insert(principal);
             Ok(next.run(req).await)
         }
-        Ok(None) => {
-            log_rejection_reason("Unknown user token");
-            return Err(StatusCode::UNAUTHORIZED);
-        }
         Err(_) => {
-            log_rejection_reason("Database error");
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            log_rejection_reason("Invalid or expired token");
+            Err(StatusCode::UNAUTHORIZED)
         }
     }
+}
+
+fn parse_bearer_token(header_value: &str) -> Option<&str> {
+    let rest = header_value.strip_prefix("Bearer")?;
+    let jwt = rest.trim();
+    if jwt.is_empty() {
+        return None;
+    }
+    Some(jwt)
 }
 
 fn log_rejection_reason(msg: &str) {

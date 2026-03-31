@@ -1,10 +1,12 @@
 [workspace]
 members = [
+    "auth",
     "cli",
     "config",
     "db",
+    "macros",
+    "trailbase-adapter",
     "web",
-    "macros"
 ]
 resolver = "2"
 default-members = ["web"]

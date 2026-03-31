@@ -7,12 +7,14 @@ use googletest::prelude::*;
 use cinema_booking_db::entities::tasks::{
     create as create_task, load as load_task, load_all as load_tasks, Task, TaskChangeset,
 };
-use cinema_booking_db::test_helpers::users::{create as create_user, UserChangeset};
 use cinema_booking_macros::db_test;
 use cinema_booking_web::test_helpers::{BodyExt, DbTestContext, RouterExt};
 use hyper::StatusCode;
 use serde_json::json;
 use uuid::Uuid;
+
+/// Matches [`cinema_booking_web::state::init_app_state`] test `FixedTokenVerifier` when `test-helpers` is enabled.
+const TEST_AUTH: &str = "Bearer test-bearer-token";
 
 type TasksList = Vec<Task>;
 
@@ -31,11 +33,6 @@ async fn test_create_unauthorized(context: &DbTestContext) {
 
 #[db_test]
 async fn test_create_invalid(context: &DbTestContext) {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset.clone(), &context.db_pool)
-        .await
-        .unwrap();
-
     let payload = json!(TaskChangeset {
         description: String::from("")
     });
@@ -46,7 +43,7 @@ async fn test_create_invalid(context: &DbTestContext) {
         .method(Method::POST)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, &user_changeset.token)
+        .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
         .await;
 
@@ -55,11 +52,6 @@ async fn test_create_invalid(context: &DbTestContext) {
 
 #[db_test]
 async fn test_create_success(context: &DbTestContext) {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset.clone(), &context.db_pool)
-        .await
-        .unwrap();
-
     let task_changeset: TaskChangeset = Faker.fake();
     let payload = json!(task_changeset);
 
@@ -69,7 +61,7 @@ async fn test_create_success(context: &DbTestContext) {
         .method(Method::POST)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, &user_changeset.token)
+        .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
         .await;
 
@@ -98,11 +90,6 @@ async fn test_create_batch_unauthorized(context: &DbTestContext) {
 
 #[db_test]
 async fn test_create_batch_invalid(context: &DbTestContext) {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset.clone(), &context.db_pool)
-        .await
-        .unwrap();
-
     let task_changeset: TaskChangeset = Faker.fake();
     let payload = json!(vec![
         TaskChangeset {
@@ -117,7 +104,7 @@ async fn test_create_batch_invalid(context: &DbTestContext) {
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, &user_changeset.token)
+        .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
         .await;
 
@@ -129,11 +116,6 @@ async fn test_create_batch_invalid(context: &DbTestContext) {
 
 #[db_test]
 async fn test_create_batch_success(context: &DbTestContext) {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset.clone(), &context.db_pool)
-        .await
-        .unwrap();
-
     let task_changeset1: TaskChangeset = Faker.fake();
     let task_changeset2: TaskChangeset = Faker.fake();
     let payload = json!(vec![task_changeset1.clone(), task_changeset2.clone()]);
@@ -144,7 +126,7 @@ async fn test_create_batch_success(context: &DbTestContext) {
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, &user_changeset.token)
+        .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
         .await;
 
@@ -242,11 +224,6 @@ async fn test_update_unauthorized(context: &DbTestContext) {
 
 #[db_test]
 async fn test_update_invalid(context: &DbTestContext) {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset.clone(), &context.db_pool)
-        .await
-        .unwrap();
-
     let task_changeset: TaskChangeset = Faker.fake();
     let task = create_task(task_changeset.clone(), &context.db_pool)
         .await
@@ -262,7 +239,7 @@ async fn test_update_invalid(context: &DbTestContext) {
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, &user_changeset.token)
+        .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
         .await;
 
@@ -274,11 +251,6 @@ async fn test_update_invalid(context: &DbTestContext) {
 
 #[db_test]
 async fn test_update_nonexistent(context: &DbTestContext) {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset.clone(), &context.db_pool)
-        .await
-        .unwrap();
-
     let task_changeset: TaskChangeset = Faker.fake();
     let payload = json!(task_changeset);
 
@@ -288,7 +260,7 @@ async fn test_update_nonexistent(context: &DbTestContext) {
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, &user_changeset.token)
+        .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
         .await;
 
@@ -297,11 +269,6 @@ async fn test_update_nonexistent(context: &DbTestContext) {
 
 #[db_test]
 async fn test_update_success(context: &DbTestContext) {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset.clone(), &context.db_pool)
-        .await
-        .unwrap();
-
     let task_changeset: TaskChangeset = Faker.fake();
     let task = create_task(task_changeset.clone(), &context.db_pool)
         .await
@@ -316,7 +283,7 @@ async fn test_update_success(context: &DbTestContext) {
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, &user_changeset.token)
+        .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
         .await;
 
@@ -346,16 +313,11 @@ async fn test_delete_unauthorized(context: &DbTestContext) {
 
 #[db_test]
 async fn test_delete_nonexistent(context: &DbTestContext) {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset.clone(), &context.db_pool)
-        .await
-        .unwrap();
-
     let response = context
         .app
         .request(format!("/tasks/{}", Uuid::new_v4()).as_str())
         .method(Method::DELETE)
-        .header(http::header::AUTHORIZATION, &user_changeset.token)
+        .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
         .await;
 
@@ -364,11 +326,6 @@ async fn test_delete_nonexistent(context: &DbTestContext) {
 
 #[db_test]
 async fn test_delete_success(context: &DbTestContext) {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset.clone(), &context.db_pool)
-        .await
-        .unwrap();
-
     let task_changeset: TaskChangeset = Faker.fake();
     let task = create_task(task_changeset.clone(), &context.db_pool)
         .await
@@ -378,7 +335,7 @@ async fn test_delete_success(context: &DbTestContext) {
         .app
         .request(format!("/tasks/{}", task.uuid).as_str())
         .method(Method::DELETE)
-        .header(http::header::AUTHORIZATION, &user_changeset.token)
+        .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
         .await;
 

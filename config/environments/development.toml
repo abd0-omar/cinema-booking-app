@@ -1,1 +1,7 @@
 # add config settings for the development environment here…
+#
+# Trailbase sidecar (JWT verification for mutating API routes):
+#   [trailbase]
+#   jwt_public_key_path = "/path/to/trailbase/data/keys/public_key.pem"
+#   # optional: base_url = "http://127.0.0.1:4000"   # for cinema-booking-trailbase HTTP client
+# Or use APP_TRAILBASE__JWT_PUBLIC_KEY_PATH / APP_TRAILBASE__JWT_PUBLIC_KEY_PEM.

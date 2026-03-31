@@ -1,5 +1,5 @@
 use crate::routes::init_routes;
-use crate::state::AppState;
+use crate::state;
 use axum::{
     body::{Body, Bytes},
     http::{Method, Request},
@@ -212,9 +212,9 @@ pub async fn setup() -> DbTestContext {
 
     let test_db_pool = setup_db(&config.database).await;
 
-    let app = init_routes(AppState {
-        db_pool: test_db_pool.clone(),
-    });
+    let app_state = state::app_state_from_pool(test_db_pool.clone(), config, &Environment::Test)
+        .await;
+    let app = init_routes(app_state);
 
     DbTestContext {
         app,

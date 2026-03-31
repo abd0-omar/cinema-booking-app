@@ -1,0 +1,13 @@
+[package]
+name = "cinema-booking-auth"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+[features]
+default = []
+test-utils = []
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"

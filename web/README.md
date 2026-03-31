@@ -4,16 +4,7 @@ This crate implements the application's web interface. It contains controllers a
 
 ## Application state
 
-The code for defining the application state and creating a fresh state when the application boots, is located in _[src/state.rs](./src/state.rs)_.By default, the state contains a pool of database connection:
-
-```rust
-#[derive(Clone)]
-pub struct AppState {
-    pub db_pool: DbPool,
-}
-```
-
-The `AppState` struct can be freely extended with custom fields.
+The code for defining the application state and creating a fresh state when the application boots is in _[src/state.rs](./src/state.rs)_. The state holds a database pool and an [`AccessTokenVerifier`](../../auth/src/lib.rs) (Trailbase JWT in production; fixed token in `test-helpers` + test env).
 
 ## Routing
 
