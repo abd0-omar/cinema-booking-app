@@ -572,6 +572,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cinema-booking-store"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cinema-booking-db",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "cinema-booking-trailbase"
 version = "0.0.1"
 dependencies = [
