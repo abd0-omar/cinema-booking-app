@@ -17,6 +17,11 @@ pub fn init_routes(app_state: AppState) -> Router {
     let public = Router::new()
         .route("/", get(views::cinema_index))
         .route(
+            "/login",
+            get(views::login_get).post(views::login_post),
+        )
+        .route("/logout", post(views::logout_post))
+        .route(
             "/ds/hello-world",
             get(views::ds_hello_world).post(views::ds_hello_world),
         );

@@ -39,8 +39,10 @@ hyper = { version = "1.0", features = ["full"], optional = true }
 validator = "0.20"
 cinema-booking-macros = { path = "../macros", optional = true }
 askama = { version = "0.15.6", features = ["derive"] }
+cookie = "0.18"
 datastar = { version = "0.3.1", features = ["axum"] }
 async-stream = "0.3.6"
+reqwest = { version = "0.12", default-features = false }
 
 [dev-dependencies]
 fake = "4.0"

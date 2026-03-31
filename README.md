@@ -2,7 +2,7 @@
 
 This is a [Gerust](https://gerust.rs) project.
 
-The example application implements a simple tasks management system. [Tasks][db/entities/tasks] are stored in SQLite and can be [created, read, updated, and deleted][web/controllers/tasks] via the web interface. Mutating operations [require a Trailbase-issued JWT][web/middlewares/auth] (`Authorization: Bearer …`): run [Trailbase](https://trailbase.io) as a sidecar, copy its Ed25519 public PEM into config (`trailbase.jwt_public_key_path` or `jwt_public_key_pem`), and obtain tokens from the sidecar’s `/api/auth/v1/*` flows. Integration tests use a fixed bearer token via the `test-helpers` build. See `auth/`, `trailbase-adapter/`, and `TrailbaseAuthConfig` in `config`.
+The example application implements a simple tasks management system. [Tasks][db/entities/tasks] are stored in SQLite and can be [created, read, updated, and deleted][web/controllers/tasks] via the web interface. Mutating operations [require a Trailbase-issued JWT][web/middlewares/auth] (`Authorization: Bearer …`) or a session cookie set by **`POST /login`**: run [Trailbase](https://trailbase.io) as a sidecar, copy its Ed25519 public PEM into config (`trailbase.jwt_public_key_path` or `jwt_public_key_pem`), and set **`trailbase.base_url`** (e.g. `http://127.0.0.1:4000`) so the login page can call Trailbase’s `/api/auth/v1/login`. You can also obtain tokens manually from those auth routes. Integration tests use a fixed bearer token via the `test-helpers` build. See `auth/`, `trailbase-adapter/`, and `TrailbaseAuthConfig` in `config`.
 
 ## Prerequisites
 

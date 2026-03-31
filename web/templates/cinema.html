@@ -43,9 +43,45 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 1rem;
             margin-bottom: 2rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--border);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-actions a {
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .header-actions a:hover {
+            text-decoration: underline;
+        }
+
+        .header-actions form {
+            margin: 0;
+        }
+
+        .header-actions button.link {
+            background: none;
+            border: none;
+            padding: 0;
+            font-family: var(--font);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .header-actions button.link:hover {
+            color: var(--accent);
+            text-decoration: underline;
         }
 
         header h1 {
@@ -375,7 +411,13 @@
 <body>
     <header>
         <h1>Cinema Booking</h1>
-        <div class="user-id">{{ user_label }}</div>
+        <div class="header-actions">
+            <a href="/login">Log in</a>
+            <form method="post" action="/logout">
+                <button type="submit" class="link">Log out</button>
+            </form>
+            <div class="user-id">{{ user_label }}</div>
+        </div>
     </header>
 
     <section class="ds-demo" data-signals:delay="400">

@@ -4,4 +4,5 @@
 # Override with APP_TRAILBASE__JWT_PUBLIC_KEY_PATH or APP_TRAILBASE__JWT_PUBLIC_KEY_PEM if needed.
 [trailbase]
 jwt_public_key_path = "traildepot/secrets/keys/public_key.pem"
-# optional: base_url = "http://127.0.0.1:4000"   # for cinema-booking-trailbase HTTP client
+# Required for the browser login page (`/login`): server POSTs to Trailbase `api/auth/v1/login`.
+base_url = "http://127.0.0.1:4000"

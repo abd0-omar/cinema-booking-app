@@ -11,6 +11,8 @@ pub struct AppState {
     pub db_pool: DbPool,
     /// Validates `Authorization: Bearer` JWTs (Trailbase sidecar in production; see config).
     pub access_token_verifier: Arc<dyn AccessTokenVerifier + Send + Sync>,
+    /// Trailbase HTTP API base URL (e.g. `http://127.0.0.1:4000`) for server-side login; [`None`] disables `POST /login`.
+    pub trailbase_base_url: Option<String>,
 }
 
 /// The application's state as it is shared across the application, e.g. in controllers and middlewares.
@@ -44,6 +46,7 @@ pub async fn app_state_from_pool(
     AppState {
         db_pool,
         access_token_verifier,
+        trailbase_base_url: config.trailbase.base_url.clone(),
     }
 }
 
