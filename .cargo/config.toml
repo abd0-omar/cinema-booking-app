@@ -1,0 +1,7 @@
+[alias]
+db = ["run", "--package", "cinema-booking-cli", "--bin", "db", "--"]
+generate = ["run", "--package", "cinema-booking-cli", "--bin", "generate", "--"]
+
+[target.'cfg(target_os = "linux")']
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/bin/mold"]

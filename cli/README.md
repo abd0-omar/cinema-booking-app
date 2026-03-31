@@ -1,0 +1,69 @@
+# cinema-booking-cli
+
+This crate contains a CLI for managing the database and creating project files like controllers, entities, middleware, or tests.
+
+> [!NOTE]
+> You should not need to make any changes to this crate.
+
+
+## Managing the database
+
+Creating the database (make sure the user configured in _[.env](../.env)_ has sufficient permissions):
+
+```sh
+cargo db create
+```
+
+Dropping the database (make sure the user configured in _[.env](../.env)_ has sufficient permissions):
+
+```sh
+cargo db drop
+```
+
+Running all pending migrations:
+
+```sh
+cargo db migrate
+```
+
+Resetting the database – this will drop the database and re-create the database, then run all migrations:
+
+```sh
+cargo db reset
+```
+
+Seeding the database – this will execute any statements in _[db/seeds.sql](../db/seeds.sql)_.
+
+```sh
+cargo db seed
+```
+
+Seeds can be used for essentially static data like currencies or countries.
+
+### Environments
+
+By default, the database tasks run with the development environment. That means the _[.env](../.env)_ is used to set the `APP_DATABASE__URL` environment variable. To run the tasks against the test database in which case the _[.env.test](../.env.test)_ file is read instead of the _.env_ file, run e.g.:
+
+```sh
+cargo db reset -e test
+```
+
+When running against the production database, neither the _[.env](../.env)_ or _[.env.test](../.env.test)_ files are read and the `APP_DATABASE__URL` environment variable is expected to point to the production database:
+
+```sh
+cargo db reset -e production
+```
+
+## Generating project files
+
+Project files are generated with the
+
+```sh
+cargo generate
+```
+
+command. The CLI comes with commands for generating middlewares, controllers, controller tests, CRUD controllers and tests for those, migrations, and entities. To get help for each of the controllers, use the `-h` flag, e.g.:
+
+```sh
+cargo generate controller -h
+```

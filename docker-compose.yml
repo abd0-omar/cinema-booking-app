@@ -1,0 +1,4 @@
+# SQLite is used for this project
+# No Docker services needed - SQLite uses local files
+version: "3"
+services: {}
