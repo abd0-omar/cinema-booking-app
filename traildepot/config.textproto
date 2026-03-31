@@ -1,5 +1,12 @@
 # Auto-generated config.Config textproto
-email {}
+email {
+  smtp_host: "smtp.postmarkapp.com"
+  smtp_port: 587
+  smtp_username: "<REDACTED>"
+  smtp_password: "<REDACTED>"
+  sender_name: "abdo omar"
+  sender_address: "newzletter@talga.dev"
+}
 server {
   application_name: "TrailBase"
   logs_retention_sec: 604800
