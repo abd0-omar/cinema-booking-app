@@ -42,7 +42,7 @@ askama = { version = "0.15.6", features = ["derive"] }
 cookie = "0.18"
 datastar = { version = "0.3.1", features = ["axum"] }
 async-stream = "0.3.6"
-reqwest = { version = "0.12", default-features = false }
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
 
 [dev-dependencies]
 fake = "4.0"

@@ -3,7 +3,7 @@
 use crate::error::Error;
 use crate::middlewares::auth::TB_ACCESS_TOKEN_COOKIE;
 use crate::state::SharedAppState;
-use crate::templates::{CinemaIndex, LoginPage};
+use crate::templates::{CinemaIndex, LoginPage, SignupPage};
 use askama::Template;
 use async_stream::stream;
 use axum::extract::{Form, Query, State};
@@ -15,7 +15,7 @@ use cookie::time::Duration as CookieDuration;
 use cookie::{Cookie, SameSite};
 use datastar::{axum::ReadSignals, prelude::PatchElements};
 use reqwest::StatusCode as HttpStatus;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
 use std::time::Duration;
 
@@ -55,6 +55,7 @@ pub async fn ds_hello_world(ReadSignals(signals): ReadSignals<HelloSignals>) -> 
 #[derive(Debug, Deserialize)]
 pub struct LoginQuery {
     pub e: Option<String>,
+    pub r: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -66,7 +67,11 @@ pub struct LoginForm {
 /// `GET /login` — Trailbase password login form.
 pub async fn login_get(Query(q): Query<LoginQuery>) -> Result<Html<String>, Error> {
     let error_message = login_error_display(q.e.as_deref());
-    let page = LoginPage { error_message };
+    let success_message = login_success_display(q.r.as_deref());
+    let page = LoginPage {
+        error_message,
+        success_message,
+    };
     Ok(Html(page.render()?))
 }
 
@@ -125,6 +130,15 @@ pub async fn logout_post() -> Response {
     res
 }
 
+fn login_success_display(code: Option<&str>) -> Option<&'static str> {
+    match code {
+        Some("1") => Some(
+            "Registration accepted. Sign in when your account is ready (check email if verification is enabled).",
+        ),
+        _ => None,
+    }
+}
+
 fn login_error_display(code: Option<&str>) -> Option<&'static str> {
     match code {
         Some("invalid") => Some("Invalid email or password."),
@@ -134,6 +148,114 @@ fn login_error_display(code: Option<&str>) -> Option<&'static str> {
         Some("failed") => Some("Sign-in failed. Try again later."),
         _ => None,
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SignupQuery {
+    pub e: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SignupForm {
+    pub email: String,
+    pub password: String,
+    pub password_repeat: String,
+}
+
+#[derive(Serialize)]
+struct TrailbaseRegisterBody<'a> {
+    email: &'a str,
+    password: &'a str,
+    password_repeat: &'a str,
+}
+
+/// `GET /signup` — Trailbase registration form.
+pub async fn signup_get(Query(q): Query<SignupQuery>) -> Result<Html<String>, Error> {
+    let error_message = signup_error_display(q.e.as_deref());
+    let page = SignupPage { error_message };
+    Ok(Html(page.render()?))
+}
+
+/// `POST /signup` — Proxies to Trailbase `POST /api/auth/v1/register`.
+pub async fn signup_post(State(state): State<SharedAppState>, Form(form): Form<SignupForm>) -> Response {
+    if form.password != form.password_repeat {
+        return redirect_signup_error("mismatch");
+    }
+
+    let Some(ref base_url) = state.trailbase_base_url else {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Trailbase base URL is not configured (set trailbase.base_url).",
+        )
+            .into_response();
+    };
+
+    let register_url = format!(
+        "{}/api/auth/v1/register",
+        base_url.trim_end_matches('/')
+    );
+
+    let http = match reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!(?e, "reqwest client build");
+            return redirect_signup_error("failed");
+        }
+    };
+
+    let email = form.email.trim();
+    let body = TrailbaseRegisterBody {
+        email,
+        password: &form.password,
+        password_repeat: &form.password_repeat,
+    };
+
+    let response = match http.post(&register_url).json(&body).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::warn!(?e, "trailbase register request");
+            return redirect_signup_error("failed");
+        }
+    };
+
+    let status = response.status();
+
+    if status.is_success() || status == HttpStatus::SEE_OTHER {
+        return Redirect::to("/login?r=1").into_response();
+    }
+
+    if status == HttpStatus::FAILED_DEPENDENCY {
+        return redirect_signup_error("email");
+    }
+
+    if matches!(
+        status,
+        HttpStatus::UNAUTHORIZED
+            | HttpStatus::UNPROCESSABLE_ENTITY
+            | HttpStatus::BAD_REQUEST
+    ) {
+        return redirect_signup_error("policy");
+    }
+
+    tracing::warn!(%status, "trailbase register unexpected status");
+    redirect_signup_error("failed")
+}
+
+fn signup_error_display(code: Option<&str>) -> Option<&'static str> {
+    match code {
+        Some("mismatch") => Some("Passwords do not match."),
+        Some("email") => Some("Could not send verification email. Check Trailbase mail settings or try again later."),
+        Some("policy") => Some("Password or email did not meet Trailbase requirements."),
+        Some("failed") => Some("Registration failed. Try again later."),
+        _ => None,
+    }
+}
+
+fn redirect_signup_error(code: &'static str) -> Response {
+    Redirect::to(format!("/signup?e={code}").as_str()).into_response()
 }
 
 fn set_session_cookie_redirect(token: &str, redirect: Redirect) -> Response {

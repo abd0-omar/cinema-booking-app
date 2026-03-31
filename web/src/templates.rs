@@ -15,4 +15,12 @@ pub struct CinemaIndex {
 #[template(path = "login.html")]
 pub struct LoginPage {
     pub error_message: Option<&'static str>,
+    pub success_message: Option<&'static str>,
+}
+
+/// Trailbase email/password registration form (`GET /signup`).
+#[derive(Template)]
+#[template(path = "signup.html")]
+pub struct SignupPage {
+    pub error_message: Option<&'static str>,
 }

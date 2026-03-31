@@ -22,6 +22,10 @@ pub fn init_routes(app_state: AppState) -> Router {
         )
         .route("/logout", post(views::logout_post))
         .route(
+            "/signup",
+            get(views::signup_get).post(views::signup_post),
+        )
+        .route(
             "/ds/hello-world",
             get(views::ds_hello_world).post(views::ds_hello_world),
         );
