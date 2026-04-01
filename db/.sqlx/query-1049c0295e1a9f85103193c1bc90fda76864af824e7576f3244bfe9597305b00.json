@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO bookings (uuid, movie_slug, seat_uuid, user_uuid) VALUES (?1, ?2, ?3, ?4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "1049c0295e1a9f85103193c1bc90fda76864af824e7576f3244bfe9597305b00"
+}

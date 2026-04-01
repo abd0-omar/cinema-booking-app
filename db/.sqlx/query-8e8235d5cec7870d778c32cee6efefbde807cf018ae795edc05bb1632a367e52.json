@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE bookings SET movie_slug = ?1, seat_uuid = ?2, user_uuid = ?3 WHERE uuid = ?4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "8e8235d5cec7870d778c32cee6efefbde807cf018ae795edc05bb1632a367e52"
+}

@@ -29,12 +29,12 @@ pub fn init_routes(app_state: AppState) -> Router {
         .route("/tasks/{id}", delete(tasks::delete))
         .route("/tasks/{id}", put(tasks::update))
         .route("/movies", post(movies::create))
-        .route("/movies/{id}", delete(movies::delete))
-        .route("/movies/{id}", put(movies::update))
+        .route("/movies/{slug}", delete(movies::delete))
+        .route("/movies/{slug}", put(movies::update))
         .route("/bookings/hold", post(bookings::hold))
         .route("/bookings/checkout", post(bookings::checkout))
         .route(
-            "/bookings/movies/{movie_uuid}",
+            "/bookings/movies/{movie_slug}",
             get(bookings::list_by_movie),
         )
         .route_layer(middleware::from_fn_with_state(
@@ -44,6 +44,6 @@ pub fn init_routes(app_state: AppState) -> Router {
         .route("/tasks", get(tasks::read_all))
         .route("/tasks/{id}", get(tasks::read_one))
         .route("/movies", get(movies::read_all))
-        .route("/movies/{id}", get(movies::read_one));
+        .route("/movies/{slug}", get(movies::read_one));
     public.merge(api).with_state(shared_app_state)
 }

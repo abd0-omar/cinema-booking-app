@@ -61,7 +61,7 @@ This project uses SQLite with optimized PRAGMA settings for performance:
 * `crates/store-adapter-redis/` - Redis `SeatHoldStore` adapter for seat `hold()`/`confirm()` with TTL-backed lock semantics
 * `db/` - Database entities, migrations, and seeds
 * `cli/` - Command-line tools
-* `web/` - Web server and API controllers (`/bookings/hold`, `/bookings/checkout`, `/bookings/movies/{movie_uuid}` use Redis + SQLite as above)
+* `web/` - Web server and API controllers (`/bookings/hold`, `/bookings/checkout`, `/bookings/movies/{movie_slug}` use Redis + SQLite as above)
 * `macros/` - Procedural macros
 
 ## Testing
@@ -107,6 +107,7 @@ In another terminal:
 
 ```bash
 hurl --test --variables-file hurl/vars.env hurl/tasks.hurl
+hurl --test --variables-file hurl/vars.env hurl/movies.hurl
 ```
 
 Commit `hurl/vars.env.example` only; `hurl/vars.env` is gitignored for local JWTs.
@@ -117,10 +118,11 @@ To exercise **real** JWT verification (same path as production), run [Trailbase]
 
 Copy [`hurl/vars.trailbase.env.example`](hurl/vars.trailbase.env.example) to `hurl/vars.trailbase.env` and set `trailbase_url`, `api_base_url`, and `trailbase_email` / `trailbase_password`. For a **new local** Trailbase data directory, the first admin is `admin@localhost` with a **random password printed once** in Trailbase’s logs (not `secret` unless you set it, e.g. `trail --data-dir ./traildepot user change-password admin@localhost '…'`). Hosted demos may document fixed credentials; use those for that deployment.
 
-The file [`hurl/tasks_trailbase.hurl`](hurl/tasks_trailbase.hurl) calls `POST /api/auth/v1/login` on Trailbase (JSON body), captures `auth_token`, then creates, reads, and deletes a task on cinema-booking using `Authorization: Bearer <auth_token>`. Accounts with **TOTP/MFA** enabled will get **403** on login until you use the MFA login flow instead.
+The file [`hurl/tasks_trailbase.hurl`](hurl/tasks_trailbase.hurl) calls `POST /api/auth/v1/login` on Trailbase (JSON body), captures `auth_token`, then creates, reads, and deletes a task on cinema-booking using `Authorization: Bearer <auth_token>`. [`hurl/movies_trailbase.hurl`](hurl/movies_trailbase.hurl) does the same for the movies API (create, read, update, delete). Accounts with **TOTP/MFA** enabled will get **403** on login until you use the MFA login flow instead.
 
 ```bash
 hurl --test --variables-file hurl/vars.trailbase.env hurl/tasks_trailbase.hurl
+hurl --test --variables-file hurl/vars.trailbase.env hurl/movies_trailbase.hurl
 ```
 
 [db/entities/tasks]: ./db/src/entities/tasks.rs

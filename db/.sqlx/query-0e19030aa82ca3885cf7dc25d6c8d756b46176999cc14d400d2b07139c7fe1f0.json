@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "DELETE FROM movies WHERE uuid = ?1",
+  "query": "DELETE FROM movies WHERE slug = ?1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -8,5 +8,5 @@
     },
     "nullable": []
   },
-  "hash": "1257fcb3ef761b9e75e29b711080f6f6f594901d4bbbcb8762bcd0c437886884"
+  "hash": "0e19030aa82ca3885cf7dc25d6c8d756b46176999cc14d400d2b07139c7fe1f0"
 }

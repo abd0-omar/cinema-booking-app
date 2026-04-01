@@ -5,13 +5,41 @@ use serde::Serialize;
 use sqlx::Sqlite;
 use validator::Validate;
 
+/// Lowercase slug base from a title: non-alphanumeric runs become single hyphens; empty → `"movie"`.
+pub(crate) fn slugify_title(title: &str) -> String {
+    let mut out = String::new();
+    let mut prev_hyphen = false;
+    for ch in title.to_lowercase().chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch);
+            prev_hyphen = false;
+        } else if !prev_hyphen && !out.is_empty() {
+            out.push('-');
+            prev_hyphen = true;
+        }
+    }
+    while out.ends_with('-') {
+        out.pop();
+    }
+    if out.is_empty() {
+        "movie".to_string()
+    } else {
+        out
+    }
+}
+
+/// Public movie identifier: `{slugify(title)}-{id}`.
+pub(crate) fn movie_slug(title: &str, id: i64) -> String {
+    format!("{}-{}", slugify_title(title), id)
+}
+
 /// A movie with auditorium dimensions (rows × seats per row).
 #[derive(Serialize, Debug, Deserialize, Clone)]
 pub struct Movie {
     /// The internal id of the record (aliases rowid for speed).
     pub id: i64,
-    /// The external UUID for URLs/APIs.
-    pub uuid: String,
+    /// URL-safe slug: slugified title plus numeric id (unique).
+    pub slug: String,
     pub title: String,
     /// Number of rows in the auditorium (JSON key `rows`).
     #[serde(rename = "rows")]
@@ -42,22 +70,22 @@ pub async fn load_all(
 ) -> Result<Vec<Movie>, crate::Error> {
     let rows = sqlx::query_as!(
         Movie,
-        r#"SELECT id, uuid, title, row_count, seats_per_row FROM movies"#
+        r#"SELECT id, slug, title, row_count, seats_per_row FROM movies"#
     )
     .fetch_all(executor)
     .await?;
     Ok(rows)
 }
 
-/// Load one [`Movie`] by UUID.
+/// Load one [`Movie`] by slug.
 pub async fn load(
-    uuid: &str,
+    slug: &str,
     executor: impl sqlx::Executor<'_, Database = Sqlite>,
 ) -> Result<Movie, crate::Error> {
     sqlx::query_as!(
         Movie,
-        r#"SELECT id as "id!", uuid, title, row_count, seats_per_row FROM movies WHERE uuid = ?1"#,
-        uuid
+        r#"SELECT id as "id!", slug, title, row_count, seats_per_row FROM movies WHERE slug = ?1"#,
+        slug
     )
     .fetch_optional(executor)
     .await
@@ -72,7 +100,7 @@ pub async fn load_by_id(
 ) -> Result<Movie, crate::Error> {
     sqlx::query_as!(
         Movie,
-        r#"SELECT id, uuid, title, row_count, seats_per_row FROM movies WHERE id = ?1"#,
+        r#"SELECT id, slug, title, row_count, seats_per_row FROM movies WHERE id = ?1"#,
         id
     )
     .fetch_optional(executor)
@@ -81,12 +109,12 @@ pub async fn load_by_id(
     .ok_or(crate::Error::NoRecordFound)
 }
 
-/// Delete a [`Movie`] by UUID.
+/// Delete a [`Movie`] by slug.
 pub async fn delete(
-    uuid: &str,
+    slug: &str,
     executor: impl sqlx::Executor<'_, Database = Sqlite>,
 ) -> Result<(), crate::Error> {
-    let result = sqlx::query!("DELETE FROM movies WHERE uuid = ?1", uuid)
+    let result = sqlx::query!("DELETE FROM movies WHERE slug = ?1", slug)
         .execute(executor)
         .await
         .map_err(crate::Error::DbError)?;
@@ -98,49 +126,60 @@ pub async fn delete(
     Ok(())
 }
 
-/// Create a [`Movie`] from a changeset (UUID generated here).
-pub async fn create(
-    movie: MovieChangeset,
-    executor: impl sqlx::Executor<'_, Database = Sqlite>,
-) -> Result<Movie, crate::Error> {
+/// Create a [`Movie`] from a changeset (slug assigned after insert: `{slugify(title)}-{id}`).
+pub async fn create(movie: MovieChangeset, db_pool: &crate::DbPool) -> Result<Movie, crate::Error> {
     movie.validate()?;
 
-    let uuid = uuid::Uuid::new_v4().to_string();
+    let mut tx = db_pool.begin().await.map_err(crate::Error::DbError)?;
+    let temp_slug = format!("__tmp_{}", uuid::Uuid::new_v4());
 
     let result = sqlx::query!(
-        "INSERT INTO movies (uuid, title, row_count, seats_per_row) VALUES (?1, ?2, ?3, ?4)",
-        uuid,
+        "INSERT INTO movies (slug, title, row_count, seats_per_row) VALUES (?1, ?2, ?3, ?4)",
+        temp_slug,
         movie.title,
         movie.row_count,
         movie.seats_per_row,
     )
-    .execute(executor)
+    .execute(&mut *tx)
     .await
     .map_err(crate::Error::DbError)?;
 
+    let id = result.last_insert_rowid();
+    let slug = movie_slug(&movie.title, id);
+    sqlx::query!("UPDATE movies SET slug = ?1 WHERE id = ?2", slug, id)
+        .execute(&mut *tx)
+        .await
+        .map_err(crate::Error::DbError)?;
+
+    tx.commit().await.map_err(crate::Error::DbError)?;
+
     Ok(Movie {
-        id: result.last_insert_rowid(),
-        uuid,
+        id,
+        slug,
         title: movie.title,
         row_count: movie.row_count,
         seats_per_row: movie.seats_per_row,
     })
 }
 
-/// Update a [`Movie`] by UUID.
+/// Update a [`Movie`] by slug (slug recomputed if title changes).
 pub async fn update(
-    uuid: &str,
+    slug: &str,
     movie: MovieChangeset,
     db_pool: &crate::DbPool,
 ) -> Result<Movie, crate::Error> {
     movie.validate()?;
 
+    let current = load(slug, db_pool).await?;
+    let new_slug = movie_slug(&movie.title, current.id);
+
     let result = sqlx::query!(
-        "UPDATE movies SET title = ?1, row_count = ?2, seats_per_row = ?3 WHERE uuid = ?4",
+        "UPDATE movies SET slug = ?1, title = ?2, row_count = ?3, seats_per_row = ?4 WHERE slug = ?5",
+        new_slug,
         movie.title,
         movie.row_count,
         movie.seats_per_row,
-        uuid
+        slug
     )
     .execute(db_pool)
     .await
@@ -152,10 +191,35 @@ pub async fn update(
 
     sqlx::query_as!(
         Movie,
-        r#"SELECT id as "id!", uuid, title, row_count, seats_per_row FROM movies WHERE uuid = ?1"#,
-        uuid
+        r#"SELECT id as "id!", slug, title, row_count, seats_per_row FROM movies WHERE slug = ?1"#,
+        new_slug
     )
     .fetch_one(db_pool)
     .await
     .map_err(crate::Error::DbError)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn slugify_title_basic() {
+        assert_eq!(
+            slugify_title("Demo: Midnight Express"),
+            "demo-midnight-express"
+        );
+        assert_eq!(
+            slugify_title("Hurl integration movie"),
+            "hurl-integration-movie"
+        );
+    }
+
+    #[test]
+    fn movie_slug_format() {
+        assert_eq!(
+            movie_slug("Demo: Midnight Express", 1),
+            "demo-midnight-express-1"
+        );
+    }
 }

@@ -47,7 +47,7 @@ pub enum SeatReservationStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SeatReservationSession {
     pub session_uuid: String,
-    pub movie_uuid: String,
+    pub movie_slug: String,
     pub seat_uuid: String,
     pub user_uuid: String,
     pub status: SeatReservationStatus,
@@ -58,16 +58,16 @@ pub struct SeatReservationSession {
 /// Input for acquiring a seat hold session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SeatHoldChangeset {
-    pub movie_uuid: String,
+    pub movie_slug: String,
     pub seat_uuid: String,
     pub user_uuid: String,
 }
 
 impl SeatHoldChangeset {
     pub fn validate(&self) -> Result<(), BookingStoreError> {
-        if self.movie_uuid.trim().is_empty() {
+        if self.movie_slug.trim().is_empty() {
             return Err(BookingStoreError::Validation(
-                "movie_uuid must not be empty".to_string(),
+                "movie_slug must not be empty".to_string(),
             ));
         }
         if self.seat_uuid.trim().is_empty() {
@@ -90,10 +90,10 @@ pub trait BookingStore: Send + Sync {
     /// Creates a booking from a validated changeset; the store assigns identifiers as needed.
     async fn book(&self, changeset: BookingChangeset) -> Result<Booking, BookingStoreError>;
 
-    /// Returns all bookings for the given movie (by its external UUID).
+    /// Returns all bookings for the given movie (by its public slug).
     async fn list_bookings_by_movie(
         &self,
-        movie_uuid: &str,
+        movie_slug: &str,
     ) -> Result<Vec<Booking>, BookingStoreError>;
 }
 
@@ -114,7 +114,7 @@ pub trait SeatHoldStore: Send + Sync {
     /// Durable booking persistence is handled by the caller (e.g. SQLite write in checkout flow).
     async fn confirm(
         &self,
-        movie_uuid: &str,
+        movie_slug: &str,
         seat_uuid: &str,
         user_uuid: &str,
     ) -> Result<SeatReservationSession, BookingStoreError>;

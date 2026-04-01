@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, uuid, title, row_count, seats_per_row FROM movies WHERE id = ?1",
+  "query": "SELECT id, slug, title, row_count, seats_per_row FROM movies",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Integer"
       },
       {
-        "name": "uuid",
+        "name": "slug",
         "ordinal": 1,
         "type_info": "Text"
       },
@@ -30,7 +30,7 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
@@ -40,5 +40,5 @@
       false
     ]
   },
-  "hash": "983125bf68b6012c8522f1002ade17834a50a7b67d0dfba4f7e67ed009c304da"
+  "hash": "9f88b21322c5b4272c204dd5691bdf7589376ce4a84895aecae7c4ab9b12eaa1"
 }

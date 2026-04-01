@@ -24,33 +24,33 @@ pub async fn read_all(
     Ok(Json(list))
 }
 
-/// Reads one movie by UUID.
+/// Reads one movie by slug (`{slugified-title}-{id}`).
 #[axum::debug_handler]
 pub async fn read_one(
     State(app_state): State<SharedAppState>,
-    Path(uuid): Path<String>,
+    Path(slug): Path<String>,
 ) -> Result<Json<movies::Movie>, Error> {
-    let movie = movies::load(&uuid, &app_state.db_pool).await?;
+    let movie = movies::load(&slug, &app_state.db_pool).await?;
     Ok(Json(movie))
 }
 
-/// Updates a movie by UUID.
+/// Updates a movie by slug.
 #[axum::debug_handler]
 pub async fn update(
     State(app_state): State<SharedAppState>,
-    Path(uuid): Path<String>,
+    Path(slug): Path<String>,
     Json(movie): Json<movies::MovieChangeset>,
 ) -> Result<Json<movies::Movie>, Error> {
-    let movie = movies::update(&uuid, movie, &app_state.db_pool).await?;
+    let movie = movies::update(&slug, movie, &app_state.db_pool).await?;
     Ok(Json(movie))
 }
 
-/// Deletes a movie by UUID.
+/// Deletes a movie by slug.
 #[axum::debug_handler]
 pub async fn delete(
     State(app_state): State<SharedAppState>,
-    Path(uuid): Path<String>,
+    Path(slug): Path<String>,
 ) -> Result<StatusCode, Error> {
-    movies::delete(&uuid, &app_state.db_pool).await?;
+    movies::delete(&slug, &app_state.db_pool).await?;
     Ok(StatusCode::NO_CONTENT)
 }

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO movies (slug, title, row_count, seats_per_row) VALUES (?1, ?2, ?3, ?4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "bf28abaca9571764b34e4eb77864bebb6bd7e8f3970392b8466d39ea09c36d39"
+}

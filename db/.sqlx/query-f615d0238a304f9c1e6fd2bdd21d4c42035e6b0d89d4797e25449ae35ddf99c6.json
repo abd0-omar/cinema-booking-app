@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE movies SET slug = ?1 WHERE id = ?2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "f615d0238a304f9c1e6fd2bdd21d4c42035e6b0d89d4797e25449ae35ddf99c6"
+}

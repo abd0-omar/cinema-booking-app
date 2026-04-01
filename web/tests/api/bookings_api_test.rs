@@ -38,7 +38,7 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
     }
 
     let user_uuid = seed_user_uuid(&context.db_pool).await;
-    let movie_uuid = movies::create(
+    let movie_slug = movies::create(
         MovieChangeset {
             title: "API test movie".into(),
             row_count: 10,
@@ -48,11 +48,11 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
     )
     .await
     .expect("seed movie")
-    .uuid;
+    .slug;
     let seat_uuid = "seat-api-1";
 
     let hold_payload = json!({
-        "movie_uuid": movie_uuid,
+        "movie_slug": movie_slug,
         "seat_uuid": seat_uuid,
         "user_uuid": user_uuid,
     });
@@ -81,11 +81,11 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
 
     assert_that!(checkout_response.status(), eq(StatusCode::CREATED));
     let booking: Booking = checkout_response.into_body().into_json::<Booking>().await;
-    assert_that!(booking.movie_uuid, eq(&movie_uuid));
+    assert_that!(booking.movie_slug, eq(&movie_slug));
     assert_that!(booking.seat_uuid, eq(seat_uuid));
     assert_that!(booking.user_uuid, eq(&user_uuid));
 
-    let list_uri = format!("/bookings/movies/{movie_uuid}");
+    let list_uri = format!("/bookings/movies/{movie_slug}");
     let list_response = context
         .app
         .request(&list_uri)

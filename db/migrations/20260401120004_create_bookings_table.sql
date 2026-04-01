@@ -2,7 +2,7 @@
 CREATE TABLE bookings (
     id INTEGER PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
-    movie_uuid TEXT NOT NULL REFERENCES movies (uuid),
+    movie_slug TEXT NOT NULL REFERENCES movies (slug),
     seat_uuid TEXT NOT NULL,
     user_uuid TEXT NOT NULL REFERENCES users (uuid)
 );

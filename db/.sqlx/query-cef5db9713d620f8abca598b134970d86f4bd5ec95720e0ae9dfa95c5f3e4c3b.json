@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, uuid, movie_uuid, seat_uuid, user_uuid FROM bookings",
+  "query": "SELECT id, uuid, movie_slug, seat_uuid, user_uuid FROM bookings WHERE id = ?1",
   "describe": {
     "columns": [
       {
@@ -14,7 +14,7 @@
         "type_info": "Text"
       },
       {
-        "name": "movie_uuid",
+        "name": "movie_slug",
         "ordinal": 2,
         "type_info": "Text"
       },
@@ -30,7 +30,7 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
       false,
@@ -40,5 +40,5 @@
       false
     ]
   },
-  "hash": "c526f27591c31c828b00cf1caf11ada8989ef7b97eb767c934e06e904485ac18"
+  "hash": "cef5db9713d620f8abca598b134970d86f4bd5ec95720e0ae9dfa95c5f3e4c3b"
 }

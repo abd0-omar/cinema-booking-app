@@ -85,9 +85,11 @@ async fn test_create_success(context: &DbTestContext) {
 
     let movies = load_movies(&context.db_pool).await.unwrap();
     assert_that!(movies, len(eq(1)));
-    assert_that!(movies.first().unwrap().title, eq(&cs.title));
-    assert_that!(movies.first().unwrap().row_count, eq(cs.row_count));
-    assert_that!(movies.first().unwrap().seats_per_row, eq(cs.seats_per_row));
+    let row = movies.first().unwrap();
+    assert_that!(row.title, eq(&cs.title));
+    assert_that!(row.row_count, eq(cs.row_count));
+    assert_that!(row.seats_per_row, eq(cs.seats_per_row));
+    assert_that!(row.slug, eq("integration-movie-1"));
 }
 
 #[db_test]
@@ -113,7 +115,7 @@ async fn test_read_all(context: &DbTestContext) {
 async fn test_read_one_nonexistent(context: &DbTestContext) {
     let response = context
         .app
-        .request(format!("/movies/{}", Uuid::new_v4()).as_str())
+        .request("/movies/definitely-missing-slug-999999")
         .method(Method::GET)
         .send()
         .await;
@@ -125,11 +127,11 @@ async fn test_read_one_nonexistent(context: &DbTestContext) {
 async fn test_read_one_success(context: &DbTestContext) {
     let cs = sample_movie_cs();
     let movie = create_movie(cs.clone(), &context.db_pool).await.unwrap();
-    let uuid = movie.uuid.clone();
+    let slug = movie.slug.clone();
 
     let response = context
         .app
-        .request(format!("/movies/{uuid}").as_str())
+        .request(format!("/movies/{slug}").as_str())
         .method(Method::GET)
         .send()
         .await;
@@ -137,7 +139,7 @@ async fn test_read_one_success(context: &DbTestContext) {
     assert_that!(response.status(), eq(StatusCode::OK));
 
     let got: Movie = response.into_body().into_json::<Movie>().await;
-    assert_that!(got.uuid, eq(&uuid));
+    assert_that!(got.slug, eq(&slug));
     assert_that!(got.title, eq(&cs.title));
 }
 
@@ -149,7 +151,7 @@ async fn test_update_unauthorized(context: &DbTestContext) {
 
     let response = context
         .app
-        .request(format!("/movies/{}", movie.uuid).as_str())
+        .request(format!("/movies/{}", movie.slug).as_str())
         .method(Method::PUT)
         .header(http::header::CONTENT_TYPE, "application/json")
         .body(Body::from(r#"{"title":"x","rows":1,"seats_per_rows":1}"#))
@@ -172,7 +174,7 @@ async fn test_update_invalid(context: &DbTestContext) {
 
     let response = context
         .app
-        .request(format!("/movies/{}", movie.uuid).as_str())
+        .request(format!("/movies/{}", movie.slug).as_str())
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
@@ -182,7 +184,7 @@ async fn test_update_invalid(context: &DbTestContext) {
 
     assert_that!(response.status(), eq(StatusCode::UNPROCESSABLE_ENTITY));
 
-    let after = load_movie(&movie.uuid, &context.db_pool).await.unwrap();
+    let after = load_movie(&movie.slug, &context.db_pool).await.unwrap();
     assert_that!(after.title, eq(&cs.title));
 }
 
@@ -201,7 +203,7 @@ async fn test_update_nonexistent(context: &DbTestContext) {
 
     let response = context
         .app
-        .request(format!("/movies/{}", Uuid::new_v4()).as_str())
+        .request("/movies/definitely-missing-slug-999999")
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
@@ -230,7 +232,7 @@ async fn test_update_success(context: &DbTestContext) {
 
     let response = context
         .app
-        .request(format!("/movies/{}", movie.uuid).as_str())
+        .request(format!("/movies/{}", movie.slug).as_str())
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
@@ -241,6 +243,8 @@ async fn test_update_success(context: &DbTestContext) {
     assert_that!(response.status(), eq(StatusCode::OK));
 
     let got: Movie = response.into_body().into_json::<Movie>().await;
+    let expected_slug = format!("updated-title-{}", movie.id);
+    assert_that!(&got.slug, eq(&expected_slug));
     assert_that!(got.title, eq(&next.title));
     assert_that!(got.row_count, eq(next.row_count));
     assert_that!(got.seats_per_row, eq(next.seats_per_row));
@@ -254,7 +258,7 @@ async fn test_delete_unauthorized(context: &DbTestContext) {
 
     let response = context
         .app
-        .request(format!("/movies/{}", movie.uuid).as_str())
+        .request(format!("/movies/{}", movie.slug).as_str())
         .method(Method::DELETE)
         .send()
         .await;
@@ -267,11 +271,11 @@ async fn test_delete_success(context: &DbTestContext) {
     let movie = create_movie(sample_movie_cs(), &context.db_pool)
         .await
         .unwrap();
-    let uuid = movie.uuid.clone();
+    let slug = movie.slug.clone();
 
     let response = context
         .app
-        .request(format!("/movies/{uuid}").as_str())
+        .request(format!("/movies/{slug}").as_str())
         .method(Method::DELETE)
         .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()
@@ -280,7 +284,7 @@ async fn test_delete_success(context: &DbTestContext) {
     assert_that!(response.status(), eq(StatusCode::NO_CONTENT));
 
     assert!(matches!(
-        load_movie(&uuid, &context.db_pool).await,
+        load_movie(&slug, &context.db_pool).await,
         Err(cinema_booking_db::Error::NoRecordFound)
     ));
 }
@@ -289,7 +293,7 @@ async fn test_delete_success(context: &DbTestContext) {
 async fn test_delete_nonexistent(context: &DbTestContext) {
     let response = context
         .app
-        .request(format!("/movies/{}", Uuid::new_v4()).as_str())
+        .request("/movies/definitely-missing-slug-999999")
         .method(Method::DELETE)
         .header(http::header::AUTHORIZATION, TEST_AUTH)
         .send()

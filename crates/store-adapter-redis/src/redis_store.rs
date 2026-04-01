@@ -77,11 +77,11 @@ impl RedisSeatHoldStore {
             .map_err(|e| BookingStoreError::Internal(format!("redis connect failed: {e}")))
     }
 
-    fn seat_key(&self, movie_uuid: &str, seat_uuid: &str) -> String {
+    fn seat_key(&self, movie_slug: &str, seat_uuid: &str) -> String {
         if self.key_prefix.is_empty() {
-            format!("seat:{movie_uuid}:{seat_uuid}")
+            format!("seat:{movie_slug}:{seat_uuid}")
         } else {
-            format!("{}:seat:{movie_uuid}:{seat_uuid}", self.key_prefix)
+            format!("{}:seat:{movie_slug}:{seat_uuid}", self.key_prefix)
         }
     }
 }
@@ -93,7 +93,7 @@ impl SeatHoldStore for RedisSeatHoldStore {
         changeset: SeatHoldChangeset,
     ) -> Result<SeatReservationSession, BookingStoreError> {
         changeset.validate()?;
-        let key = self.seat_key(&changeset.movie_uuid, &changeset.seat_uuid);
+        let key = self.seat_key(&changeset.movie_slug, &changeset.seat_uuid);
         let ttl = i64::try_from(self.hold_ttl_seconds).map_err(|_| {
             BookingStoreError::Validation("hold_ttl_seconds is too large".to_string())
         })?;
@@ -103,7 +103,7 @@ impl SeatHoldStore for RedisSeatHoldStore {
             })?;
         let session = SeatReservationSession {
             session_uuid: Uuid::new_v4().to_string(),
-            movie_uuid: changeset.movie_uuid,
+            movie_slug: changeset.movie_slug,
             seat_uuid: changeset.seat_uuid,
             user_uuid: changeset.user_uuid,
             status: SeatReservationStatus::Held,
@@ -132,13 +132,13 @@ impl SeatHoldStore for RedisSeatHoldStore {
 
     async fn confirm(
         &self,
-        movie_uuid: &str,
+        movie_slug: &str,
         seat_uuid: &str,
         user_uuid: &str,
     ) -> Result<SeatReservationSession, BookingStoreError> {
-        if movie_uuid.trim().is_empty() {
+        if movie_slug.trim().is_empty() {
             return Err(BookingStoreError::Validation(
-                "movie_uuid must not be empty".to_string(),
+                "movie_slug must not be empty".to_string(),
             ));
         }
         if seat_uuid.trim().is_empty() {
@@ -152,7 +152,7 @@ impl SeatHoldStore for RedisSeatHoldStore {
             ));
         }
 
-        let key = self.seat_key(movie_uuid, seat_uuid);
+        let key = self.seat_key(movie_slug, seat_uuid);
         let mut connection = self.connection().await?;
         let script = Script::new(CONFIRM_SCRIPT);
         let (status, payload): (i64, String) = script
@@ -207,7 +207,7 @@ mod tests {
             return;
         };
         let hold = SeatHoldChangeset {
-            movie_uuid: "m1".to_string(),
+            movie_slug: "m1".to_string(),
             seat_uuid: "s1".to_string(),
             user_uuid: "u1".to_string(),
         };
@@ -221,13 +221,13 @@ mod tests {
         assert!(matches!(second, BookingStoreError::SeatUnavailable));
 
         let confirmed = store
-            .confirm(&hold.movie_uuid, &hold.seat_uuid, &hold.user_uuid)
+            .confirm(&hold.movie_slug, &hold.seat_uuid, &hold.user_uuid)
             .await
             .unwrap();
         assert_eq!(confirmed.status, SeatReservationStatus::Confirmed);
         assert_eq!(confirmed.expires_at, first.expires_at);
 
-        let key = store.seat_key(&hold.movie_uuid, &hold.seat_uuid);
+        let key = store.seat_key(&hold.movie_slug, &hold.seat_uuid);
         let mut conn = store.connection().await.unwrap();
         let ttl: i64 = conn.ttl(key).await.unwrap();
         assert_eq!(ttl, -2);
@@ -239,13 +239,13 @@ mod tests {
             return;
         };
         let hold = SeatHoldChangeset {
-            movie_uuid: "m2".to_string(),
+            movie_slug: "m2".to_string(),
             seat_uuid: "s2".to_string(),
             user_uuid: "owner".to_string(),
         };
         store.hold(hold.clone()).await.unwrap();
         let err = store
-            .confirm(&hold.movie_uuid, &hold.seat_uuid, "intruder")
+            .confirm(&hold.movie_slug, &hold.seat_uuid, "intruder")
             .await
             .unwrap_err();
         assert!(matches!(err, BookingStoreError::SessionOwnershipMismatch));
@@ -263,14 +263,14 @@ mod tests {
         })
         .unwrap();
         let hold = SeatHoldChangeset {
-            movie_uuid: "m3".to_string(),
+            movie_slug: "m3".to_string(),
             seat_uuid: "s3".to_string(),
             user_uuid: "u3".to_string(),
         };
         quick_store.hold(hold.clone()).await.unwrap();
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         let err = quick_store
-            .confirm(&hold.movie_uuid, &hold.seat_uuid, &hold.user_uuid)
+            .confirm(&hold.movie_slug, &hold.seat_uuid, &hold.user_uuid)
             .await
             .unwrap_err();
         assert!(matches!(err, BookingStoreError::SessionNotFound));
