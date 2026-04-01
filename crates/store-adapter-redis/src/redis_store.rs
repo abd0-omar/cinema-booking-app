@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::{Duration, Utc};
 use cinema_booking_store_port::{
     BookingStoreError, SeatHoldChangeset, SeatHoldStore, SeatReservationSession,
     SeatReservationStatus,
@@ -93,12 +94,20 @@ impl SeatHoldStore for RedisSeatHoldStore {
     ) -> Result<SeatReservationSession, BookingStoreError> {
         changeset.validate()?;
         let key = self.seat_key(&changeset.movie_uuid, &changeset.seat_uuid);
+        let ttl = i64::try_from(self.hold_ttl_seconds).map_err(|_| {
+            BookingStoreError::Validation("hold_ttl_seconds is too large".to_string())
+        })?;
+        let expires_at = Utc::now()
+            + Duration::try_seconds(ttl).ok_or_else(|| {
+                BookingStoreError::Validation("hold_ttl_seconds is out of range".to_string())
+            })?;
         let session = SeatReservationSession {
             session_uuid: Uuid::new_v4().to_string(),
             movie_uuid: changeset.movie_uuid,
             seat_uuid: changeset.seat_uuid,
             user_uuid: changeset.user_uuid,
             status: SeatReservationStatus::Held,
+            expires_at,
         };
         let payload = serde_json::to_string(&session)
             .map_err(|e| BookingStoreError::Serialization(e.to_string()))?;
@@ -168,6 +177,7 @@ impl SeatHoldStore for RedisSeatHoldStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{Duration, Utc};
     use redis::AsyncCommands;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -203,6 +213,9 @@ mod tests {
         };
         let first = store.hold(hold.clone()).await.unwrap();
         assert_eq!(first.status, SeatReservationStatus::Held);
+        let now = Utc::now();
+        assert!(first.expires_at > now);
+        assert!(first.expires_at < now + Duration::seconds(125));
 
         let second = store.hold(hold.clone()).await.unwrap_err();
         assert!(matches!(second, BookingStoreError::SeatUnavailable));
@@ -212,6 +225,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(confirmed.status, SeatReservationStatus::Confirmed);
+        assert_eq!(confirmed.expires_at, first.expires_at);
 
         let key = store.seat_key(&hold.movie_uuid, &hold.seat_uuid);
         let mut conn = store.connection().await.unwrap();

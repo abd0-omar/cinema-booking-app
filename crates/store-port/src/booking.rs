@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use cinema_booking_db::entities::bookings::{Booking, BookingChangeset};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -50,6 +51,8 @@ pub struct SeatReservationSession {
     pub seat_uuid: String,
     pub user_uuid: String,
     pub status: SeatReservationStatus,
+    /// Wall-clock time when the hold is intended to expire (aligned with the store TTL, set at hold time).
+    pub expires_at: DateTime<Utc>,
 }
 
 /// Input for acquiring a seat hold session.
