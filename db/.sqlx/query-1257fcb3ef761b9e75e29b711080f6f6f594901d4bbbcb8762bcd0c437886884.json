@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM movies WHERE uuid = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "1257fcb3ef761b9e75e29b711080f6f6f594901d4bbbcb8762bcd0c437886884"
+}

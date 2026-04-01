@@ -1,4 +1,5 @@
 use cinema_booking_db::entities::bookings::{self, BookingChangeset};
+use cinema_booking_db::entities::movies::{self, MovieChangeset};
 use cinema_booking_db::test_helpers::users::{create as create_user, UserChangeset};
 use cinema_booking_db::Error;
 use cinema_booking_macros::db_test;
@@ -12,6 +13,15 @@ async fn seed_user_uuid(pool: &cinema_booking_db::DbPool) -> String {
         .await
         .expect("seed user")
         .uuid
+}
+
+async fn seed_movie_uuid(pool: &cinema_booking_db::DbPool) -> String {
+    let cs = MovieChangeset {
+        title: format!("movie-{}", Uuid::new_v4()),
+        row_count: 10,
+        seats_per_row: 12,
+    };
+    movies::create(cs, pool).await.expect("seed movie").uuid
 }
 
 #[db_test]
@@ -34,7 +44,10 @@ async fn test_create_rejects_invalid_changeset(
 async fn test_create_fails_when_user_uuid_not_in_users(
     context: &cinema_booking_web::test_helpers::DbTestContext,
 ) {
-    let changeset: BookingChangeset = Faker.fake();
+    let movie_uuid = seed_movie_uuid(&context.db_pool).await;
+    let mut changeset: BookingChangeset = Faker.fake();
+    changeset.movie_uuid = movie_uuid;
+    changeset.user_uuid = Uuid::new_v4().to_string();
     let result = bookings::create(changeset, &context.db_pool).await;
     assert_that!(result, err(anything()));
     assert!(matches!(result.unwrap_err(), Error::DbError(_)));
@@ -66,10 +79,12 @@ async fn test_list_by_movie_uuid_filters_rows(
 ) {
     let user_one_uuid = seed_user_uuid(&context.db_pool).await;
     let user_two_uuid = seed_user_uuid(&context.db_pool).await;
+    let movie_a = seed_movie_uuid(&context.db_pool).await;
+    let movie_b = seed_movie_uuid(&context.db_pool).await;
 
     bookings::create(
         BookingChangeset {
-            movie_uuid: "movie-a".into(),
+            movie_uuid: movie_a.clone(),
             seat_uuid: "seat-1".into(),
             user_uuid: user_one_uuid.clone(),
         },
@@ -80,7 +95,7 @@ async fn test_list_by_movie_uuid_filters_rows(
 
     bookings::create(
         BookingChangeset {
-            movie_uuid: "movie-a".into(),
+            movie_uuid: movie_a.clone(),
             seat_uuid: "seat-2".into(),
             user_uuid: user_two_uuid.clone(),
         },
@@ -91,7 +106,7 @@ async fn test_list_by_movie_uuid_filters_rows(
 
     bookings::create(
         BookingChangeset {
-            movie_uuid: "movie-b".into(),
+            movie_uuid: movie_b.clone(),
             seat_uuid: "seat-9".into(),
             user_uuid: user_one_uuid,
         },
@@ -100,11 +115,11 @@ async fn test_list_by_movie_uuid_filters_rows(
     .await
     .unwrap();
 
-    let rows = bookings::list_by_movie_uuid("movie-a", &context.db_pool)
+    let rows = bookings::list_by_movie_uuid(&movie_a, &context.db_pool)
         .await
         .unwrap();
     assert_that!(rows, len(eq(2)));
-    assert!(rows.iter().all(|row| row.movie_uuid == "movie-a"));
+    assert!(rows.iter().all(|row| row.movie_uuid == movie_a));
     assert_that!(rows[0].seat_uuid, eq("seat-1"));
     assert_that!(rows[1].seat_uuid, eq("seat-2"));
 }
@@ -114,8 +129,12 @@ async fn test_create_load_update_delete_round_trip(
     context: &cinema_booking_web::test_helpers::DbTestContext,
 ) {
     let user_uuid = seed_user_uuid(&context.db_pool).await;
+    let movie_first = seed_movie_uuid(&context.db_pool).await;
+    let movie_second = seed_movie_uuid(&context.db_pool).await;
     let mut changeset: BookingChangeset = Faker.fake();
     changeset.user_uuid = user_uuid.clone();
+    changeset.movie_uuid = movie_first.clone();
+    changeset.seat_uuid = "seat-roundtrip-1".into();
 
     let created = bookings::create(changeset.clone(), &context.db_pool)
         .await
@@ -139,7 +158,7 @@ async fn test_create_load_update_delete_round_trip(
     assert_that!(all, len(eq(1)));
 
     let update_cs = BookingChangeset {
-        movie_uuid: "new-movie".into(),
+        movie_uuid: movie_second.clone(),
         seat_uuid: "new-seat".into(),
         user_uuid: user_uuid.clone(),
     };

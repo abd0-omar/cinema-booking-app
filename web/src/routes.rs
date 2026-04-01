@@ -1,4 +1,4 @@
-use crate::controllers::{bookings, tasks};
+use crate::controllers::{bookings, movies, tasks};
 use crate::middlewares::auth::auth;
 use crate::state::AppState;
 use crate::views;
@@ -28,6 +28,9 @@ pub fn init_routes(app_state: AppState) -> Router {
         .route("/tasks", put(tasks::create_batch))
         .route("/tasks/{id}", delete(tasks::delete))
         .route("/tasks/{id}", put(tasks::update))
+        .route("/movies", post(movies::create))
+        .route("/movies/{id}", delete(movies::delete))
+        .route("/movies/{id}", put(movies::update))
         .route("/bookings/hold", post(bookings::hold))
         .route("/bookings/checkout", post(bookings::checkout))
         .route(
@@ -39,6 +42,8 @@ pub fn init_routes(app_state: AppState) -> Router {
             auth,
         ))
         .route("/tasks", get(tasks::read_all))
-        .route("/tasks/{id}", get(tasks::read_one));
+        .route("/tasks/{id}", get(tasks::read_one))
+        .route("/movies", get(movies::read_all))
+        .route("/movies/{id}", get(movies::read_one));
     public.merge(api).with_state(shared_app_state)
 }

@@ -1,0 +1,70 @@
+# Movies API — run against a live server (see AGENTS.md Testing).
+# Variables: base_url, token (e.g. copy hurl/vars.env.example to hurl/vars.env)
+
+# Mutating POST without auth → 401
+POST {{base_url}}/movies
+HTTP 401
+
+# Invalid body (empty title) → 422
+POST {{base_url}}/movies
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"title":"","rows":1,"seats_per_rows":1}
+HTTP 422
+
+# Create movie → 201, capture uuid
+POST {{base_url}}/movies
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"title":"Hurl integration movie","rows":14,"seats_per_rows":22}
+HTTP 201
+[Captures]
+uuid: jsonpath "$.uuid"
+[Asserts]
+jsonpath "$.title" == "Hurl integration movie"
+jsonpath "$.rows" == 14
+jsonpath "$.seats_per_rows" == 22
+jsonpath "$.uuid" exists
+
+# Read one (no auth required)
+GET {{base_url}}/movies/{{uuid}}
+HTTP 200
+[Asserts]
+jsonpath "$.uuid" == "{{uuid}}"
+jsonpath "$.title" == "Hurl integration movie"
+jsonpath "$.rows" == 14
+
+# Update without auth → 401
+PUT {{base_url}}/movies/{{uuid}}
+Content-Type: application/json
+
+{"title":"Should not apply","rows":1,"seats_per_rows":1}
+HTTP 401
+
+# Update with auth → 200
+PUT {{base_url}}/movies/{{uuid}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"title":"Hurl updated movie","rows":16,"seats_per_rows":20}
+HTTP 200
+[Asserts]
+jsonpath "$.uuid" == "{{uuid}}"
+jsonpath "$.title" == "Hurl updated movie"
+jsonpath "$.rows" == 16
+jsonpath "$.seats_per_rows" == 20
+
+# Delete without auth → 401
+DELETE {{base_url}}/movies/{{uuid}}
+HTTP 401
+
+# Delete with auth → 204
+DELETE {{base_url}}/movies/{{uuid}}
+Authorization: Bearer {{token}}
+HTTP 204
+
+# Gone after delete
+GET {{base_url}}/movies/{{uuid}}
+HTTP 404

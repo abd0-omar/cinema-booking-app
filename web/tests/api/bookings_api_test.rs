@@ -3,6 +3,7 @@ use axum::{
     http::{self, Method},
 };
 use cinema_booking_db::entities::bookings::Booking;
+use cinema_booking_db::entities::movies::{self, MovieChangeset};
 use cinema_booking_db::test_helpers::users::{create as create_user, UserChangeset};
 use cinema_booking_macros::db_test;
 use cinema_booking_web::test_helpers::{BodyExt, DbTestContext, RouterExt};
@@ -37,7 +38,17 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
     }
 
     let user_uuid = seed_user_uuid(&context.db_pool).await;
-    let movie_uuid = "movie-api-1";
+    let movie_uuid = movies::create(
+        MovieChangeset {
+            title: "API test movie".into(),
+            row_count: 10,
+            seats_per_row: 10,
+        },
+        &context.db_pool,
+    )
+    .await
+    .expect("seed movie")
+    .uuid;
     let seat_uuid = "seat-api-1";
 
     let hold_payload = json!({
@@ -70,7 +81,7 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
 
     assert_that!(checkout_response.status(), eq(StatusCode::CREATED));
     let booking: Booking = checkout_response.into_body().into_json::<Booking>().await;
-    assert_that!(booking.movie_uuid, eq(movie_uuid));
+    assert_that!(booking.movie_uuid, eq(&movie_uuid));
     assert_that!(booking.seat_uuid, eq(seat_uuid));
     assert_that!(booking.user_uuid, eq(&user_uuid));
 
