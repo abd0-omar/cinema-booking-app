@@ -627,6 +627,8 @@ dependencies = [
  "cinema-booking-config",
  "cinema-booking-db",
  "cinema-booking-macros",
+ "cinema-booking-store-adapter-redis",
+ "cinema-booking-store-port",
  "cinema-booking-web",
  "cookie",
  "datastar",

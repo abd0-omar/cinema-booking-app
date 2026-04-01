@@ -10,4 +10,4 @@ base_url = "http://127.0.0.1:4000"
 [redis]
 url = "redis://127.0.0.1:6379/"
 key_prefix = "dev"
-hold_ttl_seconds = 420
+hold_ttl_seconds = 120

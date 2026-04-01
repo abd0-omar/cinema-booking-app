@@ -215,10 +215,15 @@ pub async fn setup() -> DbTestContext {
 
     let test_db_pool = setup_db(&config.database).await;
 
-    let app_state =
-        state::app_state_from_pool(test_db_pool.clone(), config, &Environment::Test).await;
-    let app = init_routes(app_state);
     let redis_key_prefix = format!("db-test:{}", Uuid::new_v4());
+    let app_state = state::app_state_from_pool(
+        test_db_pool.clone(),
+        config,
+        &Environment::Test,
+        Some(redis_key_prefix.as_str()),
+    )
+    .await;
+    let app = init_routes(app_state);
 
     DbTestContext {
         app,

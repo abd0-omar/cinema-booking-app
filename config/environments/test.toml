@@ -3,4 +3,4 @@
 [redis]
 url = "redis://127.0.0.1:6379/"
 key_prefix = "test"
-hold_ttl_seconds = 420
+hold_ttl_seconds = 120

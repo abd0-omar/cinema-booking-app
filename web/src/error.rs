@@ -1,4 +1,5 @@
 use axum::{http::StatusCode, response::IntoResponse};
+use cinema_booking_store_port::BookingStoreError;
 use std::fmt::{Debug, Display};
 
 /// Error type that encapsultes anything that can go wrong
@@ -12,6 +13,9 @@ pub enum Error {
     /// Askama template rendering failed.
     #[error("Template error")]
     Template(#[from] askama::Error),
+    /// Redis seat hold / confirm failures (`SeatHoldStore`).
+    #[error("Seat hold store error")]
+    BookingStore(#[from] BookingStoreError),
     /// Any other error. Handled as an Internal Server Error.
     #[error("Error: {0}")]
     Other(#[from] anyhow::Error),
@@ -29,6 +33,26 @@ impl IntoResponse for Error {
             Error::Database(cinema_booking_db::Error::DbError(e)) => {
                 internal_error(e).into_response()
             }
+            Error::BookingStore(e) => match e {
+                BookingStoreError::Validation(msg) => {
+                    tracing::info!(%msg, "Seat hold validation failed");
+                    (StatusCode::UNPROCESSABLE_ENTITY, msg).into_response()
+                }
+                BookingStoreError::NotFound | BookingStoreError::SessionNotFound => {
+                    StatusCode::NOT_FOUND.into_response()
+                }
+                BookingStoreError::SessionOwnershipMismatch => {
+                    StatusCode::FORBIDDEN.into_response()
+                }
+                BookingStoreError::Conflict(msg) => {
+                    tracing::info!(%msg, "Seat hold conflict");
+                    StatusCode::CONFLICT.into_response()
+                }
+                BookingStoreError::SeatUnavailable => StatusCode::CONFLICT.into_response(),
+                BookingStoreError::Serialization(msg) | BookingStoreError::Internal(msg) => {
+                    internal_error(&msg).into_response()
+                }
+            },
             Error::Template(e) => internal_error(e).into_response(),
             Error::Other(e) => internal_error(e).into_response(),
         }

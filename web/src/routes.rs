@@ -1,4 +1,4 @@
-use crate::controllers::tasks;
+use crate::controllers::{bookings, tasks};
 use crate::middlewares::auth::auth;
 use crate::state::AppState;
 use crate::views;
@@ -28,6 +28,12 @@ pub fn init_routes(app_state: AppState) -> Router {
         .route("/tasks", put(tasks::create_batch))
         .route("/tasks/{id}", delete(tasks::delete))
         .route("/tasks/{id}", put(tasks::update))
+        .route("/bookings/hold", post(bookings::hold))
+        .route("/bookings/checkout", post(bookings::checkout))
+        .route(
+            "/bookings/movies/{movie_uuid}",
+            get(bookings::list_by_movie),
+        )
         .route_layer(middleware::from_fn_with_state(
             shared_app_state.clone(),
             auth,

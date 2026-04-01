@@ -53,7 +53,7 @@ pub struct SeatReservationSession {
 }
 
 /// Input for acquiring a seat hold session.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SeatHoldChangeset {
     pub movie_uuid: String,
     pub seat_uuid: String,

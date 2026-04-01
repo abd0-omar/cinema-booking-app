@@ -43,7 +43,7 @@ pub struct RedisConfig {
     pub url: String,
     /// Optional key prefix namespace. Empty string means no prefix.
     pub key_prefix: String,
-    /// Hold timeout in seconds; defaults to 420 (7 minutes).
+    /// Hold timeout in seconds; defaults to 120 (2 minutes).
     pub hold_ttl_seconds: u64,
 }
 
@@ -52,7 +52,7 @@ impl Default for RedisConfig {
         Self {
             url: "redis://127.0.0.1:6379/".to_string(),
             key_prefix: String::new(),
-            hold_ttl_seconds: 420,
+            hold_ttl_seconds: 120,
         }
     }
 }
