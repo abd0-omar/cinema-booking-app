@@ -4,8 +4,7 @@ CREATE TABLE bookings (
     uuid TEXT NOT NULL UNIQUE,
     movie_uuid TEXT NOT NULL,
     seat_uuid TEXT NOT NULL,
-    user_uuid TEXT NOT NULL REFERENCES users (uuid),
-    status TEXT NOT NULL CHECK (status IN ('pending', 'confirmed', 'cancelled'))
+    user_uuid TEXT NOT NULL REFERENCES users (uuid)
 );
 
 CREATE INDEX bookings_uuid_idx ON bookings (uuid);

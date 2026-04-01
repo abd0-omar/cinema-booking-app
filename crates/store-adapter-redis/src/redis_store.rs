@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use cinema_booking_store_port::{
-    Booking, BookingChangeset, BookingStore, BookingStoreError, SeatHoldChangeset,
-    SeatReservationSession, SeatReservationStatus,
+    BookingStoreError, SeatHoldChangeset, SeatHoldStore, SeatReservationSession,
+    SeatReservationStatus,
 };
 use redis::{aio::MultiplexedConnection, Script};
 use uuid::Uuid;
@@ -19,25 +19,24 @@ if session['user_uuid'] ~= user_uuid then
 end
 session['status'] = 'confirmed'
 local updated = cjson.encode(session)
-redis.call('SET', key, updated)
-redis.call('PERSIST', key)
+redis.call('DEL', key)
 return {2, updated}
 "#;
 
-///redis booking flow
+/// redis seat hold flow
 /// create session          ->        confirm/buy that seat
 ///   hold()                                confirm()
-///   TTL reserve seat                     persist seat
+///   TTL reserve seat                     consume hold key
 ///
-/// Runtime configuration for [`RedisBookingStore`].
+/// Runtime configuration for [`RedisSeatHoldStore`].
 #[derive(Debug, Clone)]
-pub struct RedisBookingStoreConfig {
+pub struct RedisSeatHoldStoreConfig {
     pub url: String,
     pub key_prefix: String,
     pub hold_ttl_seconds: u64,
 }
 
-impl Default for RedisBookingStoreConfig {
+impl Default for RedisSeatHoldStoreConfig {
     fn default() -> Self {
         Self {
             url: "redis://127.0.0.1:6379/".to_string(),
@@ -47,15 +46,15 @@ impl Default for RedisBookingStoreConfig {
     }
 }
 
-/// Redis-backed booking store for seat hold/confirm reservation flows.
-pub struct RedisBookingStore {
+/// Redis-backed seat hold store for hold/confirm reservation flows.
+pub struct RedisSeatHoldStore {
     client: redis::Client,
     key_prefix: String,
     hold_ttl_seconds: u64,
 }
 
-impl RedisBookingStore {
-    pub fn new(config: RedisBookingStoreConfig) -> Result<Self, BookingStoreError> {
+impl RedisSeatHoldStore {
+    pub fn new(config: RedisSeatHoldStoreConfig) -> Result<Self, BookingStoreError> {
         if config.hold_ttl_seconds == 0 {
             return Err(BookingStoreError::Validation(
                 "hold_ttl_seconds must be greater than 0".to_string(),
@@ -87,22 +86,7 @@ impl RedisBookingStore {
 }
 
 #[async_trait]
-impl BookingStore for RedisBookingStore {
-    async fn book(&self, _changeset: BookingChangeset) -> Result<Booking, BookingStoreError> {
-        Err(BookingStoreError::Internal(
-            "book() is not supported by RedisBookingStore; use hold()/confirm()".to_string(),
-        ))
-    }
-
-    async fn list_bookings_by_movie(
-        &self,
-        _movie_uuid: &str,
-    ) -> Result<Vec<Booking>, BookingStoreError> {
-        Err(BookingStoreError::Internal(
-            "list_bookings_by_movie() is not supported by RedisBookingStore".to_string(),
-        ))
-    }
-
+impl SeatHoldStore for RedisSeatHoldStore {
     async fn hold(
         &self,
         changeset: SeatHoldChangeset,
@@ -195,12 +179,12 @@ mod tests {
         format!("redis-adapter-test-{nanos}")
     }
 
-    async fn redis_store() -> Option<RedisBookingStore> {
-        let config = RedisBookingStoreConfig {
+    async fn redis_store() -> Option<RedisSeatHoldStore> {
+        let config = RedisSeatHoldStoreConfig {
             key_prefix: unique_prefix(),
-            ..RedisBookingStoreConfig::default()
+            ..RedisSeatHoldStoreConfig::default()
         };
-        let store = RedisBookingStore::new(config).ok()?;
+        let store = RedisSeatHoldStore::new(config).ok()?;
         if store.connection().await.is_err() {
             return None;
         }
@@ -208,7 +192,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn hold_conflict_confirm_and_persist() {
+    async fn hold_conflict_confirm_and_consume() {
         let Some(store) = redis_store().await else {
             return;
         };
@@ -232,7 +216,7 @@ mod tests {
         let key = store.seat_key(&hold.movie_uuid, &hold.seat_uuid);
         let mut conn = store.connection().await.unwrap();
         let ttl: i64 = conn.ttl(key).await.unwrap();
-        assert_eq!(ttl, -1);
+        assert_eq!(ttl, -2);
     }
 
     #[tokio::test]
@@ -258,10 +242,10 @@ mod tests {
         let Some(store) = redis_store().await else {
             return;
         };
-        let quick_store = RedisBookingStore::new(RedisBookingStoreConfig {
+        let quick_store = RedisSeatHoldStore::new(RedisSeatHoldStoreConfig {
             hold_ttl_seconds: 1,
             key_prefix: unique_prefix(),
-            ..RedisBookingStoreConfig::default()
+            ..RedisSeatHoldStoreConfig::default()
         })
         .unwrap();
         let hold = SeatHoldChangeset {

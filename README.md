@@ -57,9 +57,8 @@ This project uses SQLite with optimized PRAGMA settings for performance:
 * `config/` - Application configuration
 * `crates/auth/` - Auth domain traits and types (`cinema-booking-auth`)
 * `crates/auth-adapter-trailbase/` - Trailbase JWT verification and `trailbase-client` helpers (`cinema-booking-auth-adapter-trailbase`)
-* `crates/store-port/` - Booking persistence port (`cinema-booking-store-port`)
-* `crates/store-adapter-memory/` - In-memory `BookingStore` adapter (`cinema-booking-store-adapter-memory`)
-* `crates/store-adapter-redis/` - Redis `BookingStore` adapter for seat `hold()`/`confirm()` with TTL-backed lock semantics
+* `crates/store-port/` - Durable booking + seat-hold store ports (`cinema-booking-store-port`)
+* `crates/store-adapter-redis/` - Redis `SeatHoldStore` adapter for seat `hold()`/`confirm()` with TTL-backed lock semantics
 * `db/` - Database entities, migrations, and seeds
 * `cli/` - Command-line tools
 * `web/` - Web server and API controllers
@@ -78,10 +77,10 @@ Each test case uses an isolated SQLite database file that is automatically clean
 
 ### Redis hold/confirm adapter
 
-The Redis adapter (`cinema-booking-store-adapter-redis`) implements seat reservation flow on `BookingStore`:
+The Redis adapter (`cinema-booking-store-adapter-redis`) implements seat reservation flow on `SeatHoldStore`:
 
 * `hold()` executes `SET seat:{movieID}:{seatID} <session-json> NX EX <ttl>` semantics.
-* `confirm()` validates ownership, updates status from `held` to `confirmed`, and calls `PERSIST` to remove TTL.
+* `confirm()` validates ownership, returns a `confirmed` session payload, and consumes the hold key (`DEL`).
 
 Config keys:
 

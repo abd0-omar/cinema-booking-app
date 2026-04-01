@@ -1,5 +1,5 @@
-//! Redis implementation of [`cinema_booking_store_port::BookingStore`].
+//! Redis implementation of [`cinema_booking_store_port::SeatHoldStore`].
 
 mod redis_store;
 
-pub use redis_store::{RedisBookingStore, RedisBookingStoreConfig};
+pub use redis_store::{RedisSeatHoldStore, RedisSeatHoldStoreConfig};

@@ -5,17 +5,6 @@ use serde::Serialize;
 use sqlx::Sqlite;
 use validator::Validate;
 
-/// Lifecycle state of a booking.
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash, sqlx::Type)]
-#[cfg_attr(feature = "test-helpers", derive(Dummy))]
-#[serde(rename_all = "lowercase")]
-#[sqlx(rename_all = "lowercase")]
-pub enum BookingStatus {
-    Pending,
-    Confirmed,
-    Cancelled,
-}
-
 /// A seat booking for a movie, owned by a user.
 #[derive(Serialize, Debug, Deserialize, Clone)]
 pub struct Booking {
@@ -26,7 +15,6 @@ pub struct Booking {
     pub movie_uuid: String,
     pub seat_uuid: String,
     pub user_uuid: String,
-    pub status: BookingStatus,
 }
 
 /// Data for creating or updating a [`Booking`].
@@ -42,7 +30,6 @@ pub struct BookingChangeset {
     #[cfg_attr(feature = "test-helpers", dummy(faker = "Word()"))]
     #[validate(length(min = 1))]
     pub user_uuid: String,
-    pub status: BookingStatus,
 }
 
 /// Load all [`Booking`]s from the database.
@@ -51,7 +38,22 @@ pub async fn load_all(
 ) -> Result<Vec<Booking>, crate::Error> {
     let rows = sqlx::query_as!(
         Booking,
-        r#"SELECT id, uuid, movie_uuid, seat_uuid, user_uuid, status as "status: BookingStatus" FROM bookings"#
+        r#"SELECT id, uuid, movie_uuid, seat_uuid, user_uuid FROM bookings"#
+    )
+    .fetch_all(executor)
+    .await?;
+    Ok(rows)
+}
+
+/// Load all [`Booking`]s for a specific movie UUID.
+pub async fn list_by_movie_uuid(
+    movie_uuid: &str,
+    executor: impl sqlx::Executor<'_, Database = Sqlite>,
+) -> Result<Vec<Booking>, crate::Error> {
+    let rows = sqlx::query_as!(
+        Booking,
+        r#"SELECT id, uuid, movie_uuid, seat_uuid, user_uuid FROM bookings WHERE movie_uuid = ?1 ORDER BY id"#,
+        movie_uuid
     )
     .fetch_all(executor)
     .await?;
@@ -67,7 +69,7 @@ pub async fn load(
 ) -> Result<Booking, crate::Error> {
     sqlx::query_as!(
         Booking,
-        r#"SELECT id as "id!", uuid, movie_uuid, seat_uuid, user_uuid, status as "status: BookingStatus" FROM bookings WHERE uuid = ?1"#,
+        r#"SELECT id as "id!", uuid, movie_uuid, seat_uuid, user_uuid FROM bookings WHERE uuid = ?1"#,
         uuid
     )
     .fetch_optional(executor)
@@ -85,7 +87,7 @@ pub async fn load_by_id(
 ) -> Result<Booking, crate::Error> {
     sqlx::query_as!(
         Booking,
-        r#"SELECT id, uuid, movie_uuid, seat_uuid, user_uuid, status as "status: BookingStatus" FROM bookings WHERE id = ?1"#,
+        r#"SELECT id, uuid, movie_uuid, seat_uuid, user_uuid FROM bookings WHERE id = ?1"#,
         id
     )
     .fetch_optional(executor)
@@ -125,12 +127,11 @@ pub async fn create(
     let uuid = uuid::Uuid::new_v4().to_string();
 
     let result = sqlx::query!(
-        "INSERT INTO bookings (uuid, movie_uuid, seat_uuid, user_uuid, status) VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO bookings (uuid, movie_uuid, seat_uuid, user_uuid) VALUES (?1, ?2, ?3, ?4)",
         uuid,
         booking.movie_uuid,
         booking.seat_uuid,
         booking.user_uuid,
-        booking.status,
     )
     .execute(executor)
     .await
@@ -142,7 +143,6 @@ pub async fn create(
         movie_uuid: booking.movie_uuid,
         seat_uuid: booking.seat_uuid,
         user_uuid: booking.user_uuid,
-        status: booking.status,
     })
 }
 
@@ -157,11 +157,10 @@ pub async fn update(
     booking.validate()?;
 
     let result = sqlx::query!(
-        "UPDATE bookings SET movie_uuid = ?1, seat_uuid = ?2, user_uuid = ?3, status = ?4 WHERE uuid = ?5",
+        "UPDATE bookings SET movie_uuid = ?1, seat_uuid = ?2, user_uuid = ?3 WHERE uuid = ?4",
         booking.movie_uuid,
         booking.seat_uuid,
         booking.user_uuid,
-        booking.status,
         uuid
     )
     .execute(db_pool)
@@ -174,7 +173,7 @@ pub async fn update(
 
     sqlx::query_as!(
         Booking,
-        r#"SELECT id as "id!", uuid, movie_uuid, seat_uuid, user_uuid, status as "status: BookingStatus" FROM bookings WHERE uuid = ?1"#,
+        r#"SELECT id as "id!", uuid, movie_uuid, seat_uuid, user_uuid FROM bookings WHERE uuid = ?1"#,
         uuid
     )
     .fetch_one(db_pool)

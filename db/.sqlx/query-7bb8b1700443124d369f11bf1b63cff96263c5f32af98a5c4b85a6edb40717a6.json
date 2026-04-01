@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id as \"id!\", uuid, movie_uuid, seat_uuid, user_uuid, status as \"status: BookingStatus\" FROM bookings WHERE uuid = ?1",
+  "query": "SELECT id, uuid, movie_uuid, seat_uuid, user_uuid FROM bookings WHERE id = ?1",
   "describe": {
     "columns": [
       {
-        "name": "id!",
+        "name": "id",
         "ordinal": 0,
         "type_info": "Integer"
       },
@@ -27,18 +27,12 @@
         "name": "user_uuid",
         "ordinal": 4,
         "type_info": "Text"
-      },
-      {
-        "name": "status: BookingStatus",
-        "ordinal": 5,
-        "type_info": "Text"
       }
     ],
     "parameters": {
       "Right": 1
     },
     "nullable": [
-      true,
       false,
       false,
       false,
@@ -46,5 +40,5 @@
       false
     ]
   },
-  "hash": "6236ff8b660663b666332955de3383940cf325b80090bdc571930b784868c8d5"
+  "hash": "7bb8b1700443124d369f11bf1b63cff96263c5f32af98a5c4b85a6edb40717a6"
 }

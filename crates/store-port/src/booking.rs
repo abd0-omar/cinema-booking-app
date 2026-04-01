@@ -3,7 +3,7 @@ use cinema_booking_db::entities::bookings::{Booking, BookingChangeset};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// Errors returned by [`BookingStore`] implementations.
+/// Errors returned by booking persistence and seat hold store implementations.
 #[derive(Debug, Error)]
 pub enum BookingStoreError {
     #[error("validation failed: {0}")]
@@ -81,7 +81,7 @@ impl SeatHoldChangeset {
     }
 }
 
-/// Persists and queries seat bookings for movies.
+/// Persists and queries durable seat bookings for movies.
 #[async_trait]
 pub trait BookingStore: Send + Sync {
     /// Creates a booking from a validated changeset; the store assigns identifiers as needed.
@@ -92,7 +92,11 @@ pub trait BookingStore: Send + Sync {
         &self,
         movie_uuid: &str,
     ) -> Result<Vec<Booking>, BookingStoreError>;
+}
 
+/// Manages temporary seat hold sessions (e.g. in Redis) before durable checkout persistence.
+#[async_trait]
+pub trait SeatHoldStore: Send + Sync {
     /// Acquires a temporary seat hold session.
     ///
     /// Implementations should enforce single-winner semantics for a seat.
@@ -101,7 +105,10 @@ pub trait BookingStore: Send + Sync {
         changeset: SeatHoldChangeset,
     ) -> Result<SeatReservationSession, BookingStoreError>;
 
-    /// Confirms an existing seat hold for a user and persists it.
+    /// Confirms an existing seat hold for a user.
+    ///
+    /// Implementations should consume/remove the hold on success.
+    /// Durable booking persistence is handled by the caller (e.g. SQLite write in checkout flow).
     async fn confirm(
         &self,
         movie_uuid: &str,
