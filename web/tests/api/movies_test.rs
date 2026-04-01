@@ -12,7 +12,10 @@ use hyper::StatusCode;
 use serde_json::json;
 use uuid::Uuid;
 
-const TEST_AUTH: &str = "Bearer test-bearer-token";
+/// Non-admin test token (`FixedTokenVerifier` in test `AppState`).
+const TEST_USER_AUTH: &str = "Bearer test-bearer-token";
+/// Admin test token for movie POST/PUT/DELETE.
+const TEST_ADMIN_AUTH: &str = "Bearer test-admin-bearer-token";
 
 type MoviesList = Vec<Movie>;
 
@@ -38,6 +41,27 @@ async fn test_create_unauthorized(context: &DbTestContext) {
 }
 
 #[db_test]
+async fn test_create_forbidden(context: &DbTestContext) {
+    let payload = json!({
+        "title": "No admin",
+        "rows": 1,
+        "seats_per_rows": 1,
+    });
+
+    let response = context
+        .app
+        .request("/movies")
+        .method(Method::POST)
+        .body(Body::from(payload.to_string()))
+        .header(http::header::CONTENT_TYPE, "application/json")
+        .header(http::header::AUTHORIZATION, TEST_USER_AUTH)
+        .send()
+        .await;
+
+    assert_that!(response.status(), eq(StatusCode::FORBIDDEN));
+}
+
+#[db_test]
 async fn test_create_invalid(context: &DbTestContext) {
     let payload = json!({
         "title": "",
@@ -51,7 +75,7 @@ async fn test_create_invalid(context: &DbTestContext) {
         .method(Method::POST)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, TEST_AUTH)
+        .header(http::header::AUTHORIZATION, TEST_ADMIN_AUTH)
         .send()
         .await;
 
@@ -77,7 +101,7 @@ async fn test_create_success(context: &DbTestContext) {
         .method(Method::POST)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, TEST_AUTH)
+        .header(http::header::AUTHORIZATION, TEST_ADMIN_AUTH)
         .send()
         .await;
 
@@ -162,6 +186,25 @@ async fn test_update_unauthorized(context: &DbTestContext) {
 }
 
 #[db_test]
+async fn test_update_forbidden(context: &DbTestContext) {
+    let movie = create_movie(sample_movie_cs(), &context.db_pool)
+        .await
+        .unwrap();
+
+    let response = context
+        .app
+        .request(format!("/movies/{}", movie.slug).as_str())
+        .method(Method::PUT)
+        .header(http::header::CONTENT_TYPE, "application/json")
+        .body(Body::from(r#"{"title":"x","rows":1,"seats_per_rows":1}"#))
+        .header(http::header::AUTHORIZATION, TEST_USER_AUTH)
+        .send()
+        .await;
+
+    assert_that!(response.status(), eq(StatusCode::FORBIDDEN));
+}
+
+#[db_test]
 async fn test_update_invalid(context: &DbTestContext) {
     let cs = sample_movie_cs();
     let movie = create_movie(cs.clone(), &context.db_pool).await.unwrap();
@@ -178,7 +221,7 @@ async fn test_update_invalid(context: &DbTestContext) {
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, TEST_AUTH)
+        .header(http::header::AUTHORIZATION, TEST_ADMIN_AUTH)
         .send()
         .await;
 
@@ -207,7 +250,7 @@ async fn test_update_nonexistent(context: &DbTestContext) {
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, TEST_AUTH)
+        .header(http::header::AUTHORIZATION, TEST_ADMIN_AUTH)
         .send()
         .await;
 
@@ -236,7 +279,7 @@ async fn test_update_success(context: &DbTestContext) {
         .method(Method::PUT)
         .body(Body::from(payload.to_string()))
         .header(http::header::CONTENT_TYPE, "application/json")
-        .header(http::header::AUTHORIZATION, TEST_AUTH)
+        .header(http::header::AUTHORIZATION, TEST_ADMIN_AUTH)
         .send()
         .await;
 
@@ -267,6 +310,23 @@ async fn test_delete_unauthorized(context: &DbTestContext) {
 }
 
 #[db_test]
+async fn test_delete_forbidden(context: &DbTestContext) {
+    let movie = create_movie(sample_movie_cs(), &context.db_pool)
+        .await
+        .unwrap();
+
+    let response = context
+        .app
+        .request(format!("/movies/{}", movie.slug).as_str())
+        .method(Method::DELETE)
+        .header(http::header::AUTHORIZATION, TEST_USER_AUTH)
+        .send()
+        .await;
+
+    assert_that!(response.status(), eq(StatusCode::FORBIDDEN));
+}
+
+#[db_test]
 async fn test_delete_success(context: &DbTestContext) {
     let movie = create_movie(sample_movie_cs(), &context.db_pool)
         .await
@@ -277,7 +337,7 @@ async fn test_delete_success(context: &DbTestContext) {
         .app
         .request(format!("/movies/{slug}").as_str())
         .method(Method::DELETE)
-        .header(http::header::AUTHORIZATION, TEST_AUTH)
+        .header(http::header::AUTHORIZATION, TEST_ADMIN_AUTH)
         .send()
         .await;
 
@@ -295,7 +355,7 @@ async fn test_delete_nonexistent(context: &DbTestContext) {
         .app
         .request("/movies/definitely-missing-slug-999999")
         .method(Method::DELETE)
-        .header(http::header::AUTHORIZATION, TEST_AUTH)
+        .header(http::header::AUTHORIZATION, TEST_ADMIN_AUTH)
         .send()
         .await;
 

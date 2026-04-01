@@ -6,6 +6,7 @@
 #   set to that instance’s Ed25519 public PEM (not APP_ENVIRONMENT=test / not test-helpers).
 # - Trailbase credentials: see vars.trailbase.env.example (password may need aligning with `trail user change-password`).
 # - Account must not require MFA (otherwise login returns 403).
+# - Movie POST/PUT/DELETE require a Trailbase admin user (JWT `admin: true`); non-admins get 403.
 #
 # Variables: see hurl/vars.trailbase.env.example (same as tasks_trailbase.hurl)
 

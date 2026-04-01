@@ -6,6 +6,13 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// Application role derived from the access token (Trailbase: `admin` claim).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Role {
+    User,
+    Admin,
+}
+
 /// Authenticated subject derived from a validated access token.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Principal {
@@ -17,6 +24,17 @@ pub struct Principal {
     #[serde(default)]
     pub mfa: bool,
     pub csrf_token: String,
+}
+
+impl Principal {
+    /// Maps [`Principal::is_admin`] to [`Role::Admin`] or [`Role::User`].
+    pub fn role(&self) -> Role {
+        if self.is_admin {
+            Role::Admin
+        } else {
+            Role::User
+        }
+    }
 }
 
 /// Errors from access-token verification.

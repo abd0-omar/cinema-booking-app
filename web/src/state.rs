@@ -87,16 +87,21 @@ async fn build_access_token_verifier(
     if *environment == Environment::Test {
         use cinema_booking_auth::FixedTokenVerifier;
 
-        return Ok(Arc::new(FixedTokenVerifier::new(
-            "test-bearer-token",
-            cinema_booking_auth::Principal {
-                sub: "test-sub".to_string(),
-                email: "test@example.com".to_string(),
-                is_admin: false,
-                mfa: false,
-                csrf_token: String::new(),
-            },
-        )));
+        let user = cinema_booking_auth::Principal {
+            sub: "test-sub".to_string(),
+            email: "test@example.com".to_string(),
+            is_admin: false,
+            mfa: false,
+            csrf_token: String::new(),
+        };
+        let admin = cinema_booking_auth::Principal {
+            is_admin: true,
+            ..user.clone()
+        };
+        return Ok(Arc::new(FixedTokenVerifier::from_pairs([
+            ("test-bearer-token".to_string(), user),
+            ("test-admin-bearer-token".to_string(), admin),
+        ])));
     }
 
     #[cfg(not(feature = "test-helpers"))]

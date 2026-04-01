@@ -7,6 +7,9 @@ use std::fmt::{Debug, Display};
 /// so that it can be returned directly from a request handler.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    /// Authenticated caller is not allowed to perform this action.
+    #[error("Forbidden")]
+    Forbidden,
     /// Errors that can occur as a result of a data layer operation.
     #[error("Database error")]
     Database(#[from] cinema_booking_db::Error),
@@ -24,6 +27,10 @@ pub enum Error {
 impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         match self {
+            Error::Forbidden => {
+                tracing::info!("Forbidden request");
+                StatusCode::FORBIDDEN.into_response()
+            }
             Error::Database(cinema_booking_db::Error::NoRecordFound) => {
                 StatusCode::NOT_FOUND.into_response()
             }
