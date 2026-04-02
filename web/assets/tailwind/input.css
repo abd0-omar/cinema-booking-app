@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@source not "./tailwindcss";
+@source not "./daisyui{,*}.mjs";
+
+@source "../../templates/**/*.html";
+
+@plugin "./daisyui.mjs" {
+  themes: sunset --default;
+  logs: false;
+}

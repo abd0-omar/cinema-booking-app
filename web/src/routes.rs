@@ -8,7 +8,9 @@ use axum::{
     routing::{delete, get, post, put},
     Router,
 };
+use std::path::PathBuf;
 use std::sync::Arc;
+use tower_http::services::ServeDir;
 
 /// Initializes the application's routes.
 ///
@@ -53,5 +55,9 @@ pub fn init_routes(app_state: AppState) -> Router {
         .route("/tasks/{id}", get(tasks::read_one))
         .route("/movies", get(movies::read_all))
         .route("/movies/{slug}", get(movies::read_one));
-    public.merge(api).with_state(shared_app_state)
+    let static_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("static");
+    Router::new()
+        .nest_service("/static", ServeDir::new(static_dir))
+        .merge(public.merge(api))
+        .with_state(shared_app_state)
 }

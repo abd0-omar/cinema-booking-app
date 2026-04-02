@@ -5,464 +5,77 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cinema Booking</title>
+    <link rel="stylesheet" href="/static/app.css" />
     <script type="module"
         src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js"></script>
-    <style>
-        :root {
-            --bg: #0f0f0f;
-            --surface: #1a1a1a;
-            --surface-hover: #252525;
-            --border: #333;
-            --text: #e0e0e0;
-            --text-muted: #888;
-            --available: #2a2a2a;
-            --available-hover: #3a3a3a;
-            --held-mine: #d4a017;
-            --held-other: #e06c00;
-            --confirmed: #c0392b;
-            --accent: #4fc3f7;
-            --danger: #e74c3c;
-            --font: "SF Mono", "Fira Code", "Cascadia Code", monospace;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: var(--font);
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 2rem;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .header-actions a {
-            font-size: 0.75rem;
-            color: var(--accent);
-            text-decoration: none;
-        }
-
-        .header-actions a:hover {
-            text-decoration: underline;
-        }
-
-        .header-actions form {
-            margin: 0;
-        }
-
-        .header-actions button.link {
-            background: none;
-            border: none;
-            padding: 0;
-            font-family: var(--font);
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-
-        .header-actions button.link:hover {
-            color: var(--accent);
-            text-decoration: underline;
-        }
-
-        header h1 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-        }
-
-        .user-id {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            background: var(--surface);
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-        }
-
-        .movies {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .movie-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.2rem 1.6rem;
-            cursor: pointer;
-            transition:
-                border-color 0.2s,
-                background 0.2s;
-            min-width: 180px;
-        }
-
-        .movie-card:hover {
-            background: var(--surface-hover);
-            border-color: var(--accent);
-        }
-
-        .movie-card.selected {
-            border-color: var(--accent);
-            background: var(--surface-hover);
-        }
-
-        .movie-card h3 {
-            font-size: 1rem;
-            margin-bottom: 0.4rem;
-        }
-
-        .movie-card p {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .content {
-            display: flex;
-            gap: 2rem;
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-
-        .screen-area {
-            flex: 1;
-            min-width: 300px;
-        }
-
-        .screen-label {
-            text-align: center;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: var(--text-muted);
-            margin-bottom: 0.6rem;
-        }
-
-        .screen-bar {
-            height: 3px;
-            background: linear-gradient(90deg,
-                    transparent,
-                    var(--accent),
-                    transparent);
-            border-radius: 2px;
-            margin: 0 2rem 1.5rem;
-        }
-
-        .seat-grid {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .seat-row {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .row-label {
-            width: 1.5rem;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-align: center;
-        }
-
-        .seat {
-            width: 36px;
-            height: 32px;
-            border-radius: 6px 6px 3px 3px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.65rem;
-            font-family: var(--font);
-            color: var(--text-muted);
-            background: var(--available);
-            transition:
-                background 0.2s,
-                transform 0.15s;
-        }
-
-        .seat:hover:not(.seat--held-mine):not(.seat--held-other):not(.seat--confirmed) {
-            background: var(--available-hover);
-            transform: scale(1.08);
-        }
-
-        .seat--held-mine {
-            background: var(--held-mine);
-            color: #000;
-            cursor: default;
-        }
-
-        .seat--held-other {
-            background: var(--held-other);
-            color: #fff;
-            cursor: not-allowed;
-        }
-
-        .seat--confirmed {
-            background: var(--confirmed);
-            color: #fff;
-            cursor: not-allowed;
-        }
-
-        .legend {
-            display: flex;
-            gap: 1.2rem;
-            justify-content: center;
-            margin-top: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
-
-        .legend-swatch {
-            width: 14px;
-            height: 12px;
-            border-radius: 3px 3px 2px 2px;
-        }
-
-        .checkout {
-            width: 280px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.4rem;
-        }
-
-        .checkout h3 {
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
-            color: var(--accent);
-        }
-
-        .checkout-info {
-            font-size: 0.8rem;
-            margin-bottom: 0.6rem;
-        }
-
-        .checkout-info span {
-            color: var(--text-muted);
-        }
-
-        .timer {
-            font-size: 1.8rem;
-            font-weight: 700;
-            text-align: center;
-            margin: 1rem 0;
-            color: var(--held-mine);
-            transition: color 0.3s;
-        }
-
-        .timer.urgent {
-            color: var(--danger);
-        }
-
-        .checkout-buttons {
-            display: flex;
-            gap: 0.6rem;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 0.6rem;
-            border: none;
-            border-radius: 6px;
-            font-family: var(--font);
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .btn:hover {
-            opacity: 0.85;
-        }
-
-        .btn--confirm {
-            background: #27ae60;
-            color: #fff;
-        }
-
-        .btn--release {
-            background: var(--danger);
-            color: #fff;
-        }
-
-        .status-msg {
-            text-align: center;
-            margin-top: 1rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .status-msg.success {
-            color: #27ae60;
-        }
-
-        .status-msg.error {
-            color: var(--danger);
-        }
-
-        .empty-state {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            padding: 3rem 1rem;
-        }
-
-        .ds-demo {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.2rem 1.4rem;
-            margin-bottom: 2rem;
-            max-width: 36rem;
-        }
-
-        .ds-demo h2 {
-            font-size: 0.95rem;
-            color: var(--accent);
-            margin-bottom: 0.6rem;
-        }
-
-        .ds-demo p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 1rem;
-        }
-
-        .ds-demo label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-right: 0.5rem;
-        }
-
-        .ds-demo input[type="number"] {
-            width: 6rem;
-            padding: 0.35rem 0.5rem;
-            border-radius: 4px;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            color: var(--text);
-            font-family: var(--font);
-            font-size: 0.8rem;
-        }
-
-        .ds-demo .ds-row {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-        }
-
-        .ds-demo button {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 6px;
-            font-family: var(--font);
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            background: var(--accent);
-            color: #0a0a0a;
-        }
-
-        .ds-demo button:hover {
-            opacity: 0.9;
-        }
-
-        #message {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-top: 0.5rem;
-            color: var(--text);
-        }
-    </style>
 </head>
 
-<body>
-    <header>
-        <h1>Cinema Booking</h1>
-        <div class="header-actions">
-            <a href="/signup">Sign up</a>
-            <a href="/login">Log in</a>
-            <form method="post" action="/logout">
-                <button type="submit" class="link">Log out</button>
-            </form>
-            <div class="user-id">{{ user_label }}</div>
-        </div>
-    </header>
+<body class="min-h-screen bg-base-100 p-6 sm:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="navbar bg-base-200 rounded-box mb-8 px-4 py-2 flex-wrap gap-2">
+            <div class="navbar-start">
+                <h1 class="text-xl font-semibold tracking-tight">Cinema Booking</h1>
+            </div>
+            <div class="navbar-end flex flex-wrap items-center gap-2">
+                <a href="/signup" class="btn btn-ghost btn-sm">Sign up</a>
+                <a href="/login" class="btn btn-ghost btn-sm">Log in</a>
+                <form method="post" action="/logout" class="m-0 inline">
+                    <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
+                </form>
+                <span class="badge badge-neutral badge-sm whitespace-normal max-w-full">{{ user_label }}</span>
+            </div>
+        </header>
 
-    <section class="ds-demo" data-signals:delay="400">
-        <h2>Datastar demo</h2>
-        <p>SSE patches stream from the server (Rust + datastar crate). Adjust delay between character steps.</p>
-        <div class="ds-row">
-            <label for="delay">Delay (ms)</label>
-            <input data-bind:delay id="delay" type="number" step="50" min="0" value="400" />
-        </div>
-        <div class="ds-row">
-            <button type="button" data-on:click="@get('/ds/hello-world')">Stream hello</button>
-        </div>
-        <div id="message">Hello, world!</div>
-    </section>
+        <section class="card bg-base-200 shadow-sm mb-8 max-w-xl" data-signals:delay="400">
+            <div class="card-body">
+                <h2 class="card-title text-primary">Datastar demo</h2>
+                <p class="text-sm text-base-content/70 mb-4">SSE patches stream from the server (Rust + datastar crate).
+                    Adjust delay between character steps.</p>
+                <div class="flex flex-wrap items-center gap-3 mb-4">
+                    <label class="text-xs text-base-content/60" for="delay">Delay (ms)</label>
+                    <input data-bind:delay id="delay" type="number" step="50" min="0" value="400"
+                        class="input input-bordered input-sm w-28" />
+                </div>
+                <div class="flex flex-wrap items-center gap-3 mb-4">
+                    <button type="button" class="btn btn-primary btn-sm" data-on:click="@get('/ds/hello-world')">Stream
+                        hello</button>
+                </div>
+                <div id="message" class="text-2xl font-semibold mt-2 text-base-content">Hello, world!</div>
+            </div>
+        </section>
 
-    <div class="movies" id="movieList">
-        <div class="empty-state">Movies load here when the cinema API is wired up.</div>
-    </div>
+        <div class="flex flex-wrap gap-4 mb-8" id="movieList">
+            <div class="w-full text-center text-base-content/60 py-12 text-sm">Movies load here when the cinema API is
+                wired up.</div>
+        </div>
 
-    <div class="content" id="mainContent" style="display: none">
-        <div class="screen-area">
-            <div class="screen-label">Screen</div>
-            <div class="screen-bar"></div>
-            <div class="seat-grid" id="seatGrid"></div>
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-swatch" style="background: var(--available)"></div>
-                    Available
+        <div class="flex flex-wrap gap-8 items-start" id="mainContent" style="display: none">
+            <div class="flex-1 min-w-[300px]">
+                <div class="text-center text-xs uppercase tracking-widest text-base-content/60 mb-2">Screen</div>
+                <div class="h-0.5 bg-linear-to-r from-transparent via-primary to-transparent rounded-sm mx-8 mb-6">
                 </div>
-                <div class="legend-item">
-                    <div class="legend-swatch" style="background: var(--held-mine)"></div>
-                    Your hold
-                </div>
-                <div class="legend-item">
-                    <div class="legend-swatch" style="background: var(--held-other)"></div>
-                    Other hold
-                </div>
-                <div class="legend-item">
-                    <div class="legend-swatch" style="background: var(--confirmed)"></div>
-                    Confirmed
+                <div class="flex flex-col items-center gap-2" id="seatGrid"></div>
+                <div class="flex flex-wrap justify-center gap-5 mt-6 text-xs text-base-content/60">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3.5 h-3 rounded-t-md rounded-b-sm bg-base-300" aria-hidden="true"></div>
+                        Available
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3.5 h-3 rounded-t-md rounded-b-sm bg-warning" aria-hidden="true"></div>
+                        Your hold
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3.5 h-3 rounded-t-md rounded-b-sm bg-secondary" aria-hidden="true"></div>
+                        Other hold
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3.5 h-3 rounded-t-md rounded-b-sm bg-error" aria-hidden="true"></div>
+                        Confirmed
+                    </div>
                 </div>
             </div>
+            <div id="checkoutArea"></div>
         </div>
-        <div id="checkoutArea"></div>
     </div>
 </body>
 
