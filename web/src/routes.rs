@@ -1,5 +1,6 @@
 use crate::controllers::{bookings, movies, tasks};
 use crate::middlewares::auth::auth;
+use crate::middlewares::movie_admin::require_movie_admin;
 use crate::state::AppState;
 use crate::views;
 use axum::{
@@ -23,14 +24,20 @@ pub fn init_routes(app_state: AppState) -> Router {
             "/ds/hello-world",
             get(views::ds_hello_world).post(views::ds_hello_world),
         );
+    let movie_writes = Router::new()
+        .route("/movies", post(movies::create))
+        .route("/movies/{slug}", delete(movies::delete))
+        .route("/movies/{slug}", put(movies::update))
+        .route_layer(middleware::from_fn(require_movie_admin))
+        .route_layer(middleware::from_fn_with_state(
+            shared_app_state.clone(),
+            auth,
+        ));
     let api = Router::new()
         .route("/tasks", post(tasks::create))
         .route("/tasks", put(tasks::create_batch))
         .route("/tasks/{id}", delete(tasks::delete))
         .route("/tasks/{id}", put(tasks::update))
-        .route("/movies", post(movies::create))
-        .route("/movies/{slug}", delete(movies::delete))
-        .route("/movies/{slug}", put(movies::update))
         .route("/bookings/hold", post(bookings::hold))
         .route("/bookings/checkout", post(bookings::checkout))
         .route(
@@ -41,6 +48,7 @@ pub fn init_routes(app_state: AppState) -> Router {
             shared_app_state.clone(),
             auth,
         ))
+        .merge(movie_writes)
         .route("/tasks", get(tasks::read_all))
         .route("/tasks/{id}", get(tasks::read_one))
         .route("/movies", get(movies::read_all))
