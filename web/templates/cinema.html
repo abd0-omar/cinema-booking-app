@@ -96,43 +96,35 @@
             </div>
         </header>
 
-        <main id="main-content">
-            <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <p class="font-display text-xs font-semibold uppercase tracking-[0.35em] text-secondary">Program</p>
-                    <h2 class="font-display text-2xl font-semibold text-base-content sm:text-3xl">Now showing</h2>
-                    <p class="mt-1 max-w-xl text-sm text-base-content/65">Choose a title to open the auditorium and pick
-                        seats. Holds expire; confirm to save your booking.</p>
-                </div>
-                <span class="badge badge-outline badge-neutral badge-lg hidden sm:inline-flex">Feature grid</span>
+        <main id="main-content"
+            data-signals='{"movie_slug":"","viewer":"{{ viewer_uuid }}","interval_ms":2000}'>
+            <div class="mb-6">
+                <p class="font-display text-xs font-semibold uppercase tracking-[0.35em] text-secondary">Program</p>
+                <h2 class="font-display text-2xl font-semibold text-base-content sm:text-3xl">Now showing</h2>
+                <p class="mt-1 max-w-xl text-sm text-base-content/65">Films currently on the schedule.</p>
             </div>
 
-            <div class="mb-2 flex justify-center" aria-hidden="true">
-                <div
-                    class="h-1 w-full max-w-2xl rounded-full bg-gradient-to-r from-transparent via-primary/50 to-transparent">
-                </div>
-            </div>
+            <ul class="mb-10 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3" id="movieList"
+                role="list" aria-label="Films"
+                data-on:click="$movie_slug = evt.target.closest('[data-movie-slug]')?.dataset?.movieSlug; if (!$movie_slug) return; document.getElementById('mainContent').classList.remove('hidden'); @post('/ds/seat-map')">
+                {% for movie in movies %}
+                <li role="listitem" data-movie-slug="{{ movie.slug }}"
+                    class="min-w-0 rounded-box border border-base-300 bg-base-100 px-4 py-3">
+                    <p class="font-display font-semibold text-base-content">{{ movie.title }}</p>
+                    <p class="mt-0.5 text-sm text-base-content/60">{{ movie.row_count }} rows · {{ movie.seats_per_row }} seats per row</p>
+                </li>
+                {% else %}
+                <li role="listitem"
+                    class="col-span-full rounded-box border border-dashed border-base-300 bg-base-100/50 px-4 py-8 text-center text-sm text-base-content/55">
+                    No films yet. Add some with <code
+                        class="rounded bg-base-200 px-1 py-0.5 text-xs text-base-content/80">POST /movies</code> (admin)
+                    or run <code
+                        class="rounded bg-base-200 px-1 py-0.5 text-xs text-base-content/80">cargo db seed</code>.
+                </li>
+                {% endfor %}
+            </ul>
 
-            <div class="mb-10 flex flex-wrap gap-4" id="movieList" role="list" aria-label="Films">
-                <div role="listitem"
-                    class="card card-dash w-full border-base-300/60 bg-base-100/50 py-12 text-center text-sm text-base-content/55">
-                    <div class="card-body items-center gap-3 py-6">
-                        <div class="flex items-center gap-1 rounded-box border border-dashed border-primary/25 bg-primary/5 px-4 py-3"
-                            aria-hidden="true">
-                            <span class="h-10 w-2.5 rounded-sm bg-primary/30"></span>
-                            <span class="h-10 w-2.5 rounded-sm bg-primary/30"></span>
-                            <span class="h-10 w-2.5 rounded-sm bg-primary/30"></span>
-                            <span class="h-10 w-2.5 rounded-sm bg-primary/30"></span>
-                        </div>
-                        <p class="max-w-md leading-relaxed">No posters on the wall yet. When the page loads titles from
-                            <code class="rounded bg-base-200 px-1 py-0.5 text-xs text-base-content/80">/movies</code>,
-                            each film will show up here as a card.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap items-start gap-8" id="mainContent" style="display: none">
+            <div class="flex flex-wrap items-start gap-8 hidden" id="mainContent">
                 <div
                     class="card card-border min-w-[min(100%,300px)] flex-1 border-base-300/80 bg-base-100/90 shadow-lg">
                     <div class="card-body items-center gap-0 pt-6">

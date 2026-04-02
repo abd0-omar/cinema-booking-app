@@ -118,4 +118,12 @@ pub trait SeatHoldStore: Send + Sync {
         seat_uuid: &str,
         user_uuid: &str,
     ) -> Result<SeatReservationSession, BookingStoreError>;
+
+    /// Lists all active **held** seat sessions for a movie (Redis keys matching that movie).
+    ///
+    /// Implementations should return only sessions with [`SeatReservationStatus::Held`].
+    async fn list_held_sessions_for_movie(
+        &self,
+        movie_slug: &str,
+    ) -> Result<Vec<SeatReservationSession>, BookingStoreError>;
 }

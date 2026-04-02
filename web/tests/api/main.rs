@@ -5,4 +5,5 @@ mod bookings_test;
 mod movies_test;
 mod page_test;
 mod redis_harness_test;
+mod seats_api_test;
 mod tasks_test;

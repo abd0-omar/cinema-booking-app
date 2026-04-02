@@ -25,6 +25,10 @@ pub fn init_routes(app_state: AppState) -> Router {
         .route(
             "/ds/hello-world",
             get(views::ds_hello_world).post(views::ds_hello_world),
+        )
+        .route(
+            "/ds/seat-map",
+            get(views::ds_seat_map).post(views::ds_seat_map),
         );
     let movie_writes = Router::new()
         .route("/movies", post(movies::create))
@@ -54,6 +58,7 @@ pub fn init_routes(app_state: AppState) -> Router {
         .route("/tasks", get(tasks::read_all))
         .route("/tasks/{id}", get(tasks::read_one))
         .route("/movies", get(movies::read_all))
+        .route("/movies/{slug}/seats", get(movies::read_seats))
         .route("/movies/{slug}", get(movies::read_one));
     let static_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("static");
     Router::new()

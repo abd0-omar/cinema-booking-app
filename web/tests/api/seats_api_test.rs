@@ -2,7 +2,6 @@ use axum::{
     body::Body,
     http::{self, Method},
 };
-use cinema_booking_db::entities::bookings::Booking;
 use cinema_booking_db::entities::movies::{self, MovieChangeset};
 use cinema_booking_db::test_helpers::users::{create as create_user, UserChangeset};
 use cinema_booking_macros::db_test;
@@ -23,7 +22,7 @@ async fn seed_user_uuid(pool: &cinema_booking_db::DbPool) -> String {
 }
 
 #[db_test]
-async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
+async fn test_get_movie_seats_layout_and_states(context: &DbTestContext) {
     let config = cinema_booking_config::load_config::<cinema_booking_config::Config>(
         &cinema_booking_config::Environment::Test,
     )
@@ -40,23 +39,28 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
     let user_uuid = seed_user_uuid(&context.db_pool).await;
     let movie_slug = movies::create(
         MovieChangeset {
-            title: "API test movie".into(),
-            row_count: 10,
-            seats_per_row: 10,
+            title: "Seats API film".into(),
+            row_count: 2,
+            seats_per_row: 3,
         },
         &context.db_pool,
     )
     .await
     .expect("seed movie")
     .slug;
-    let seat_uuid = "s1";
+
+    let uri = format!("/movies/{movie_slug}/seats");
+    let response = context.app.request(&uri).method(Method::GET).send().await;
+    assert_that!(response.status(), eq(StatusCode::OK));
+    let body: serde_json::Value = response.into_body().into_json().await;
+    let seats_arr = body["seats"].as_array().expect("seats");
+    assert_that!(seats_arr, len(eq(6)));
 
     let hold_payload = json!({
         "movie_slug": movie_slug,
-        "seat_uuid": seat_uuid,
+        "seat_uuid": "s1",
         "user_uuid": user_uuid,
     });
-
     let hold_response = context
         .app
         .request("/bookings/hold")
@@ -66,10 +70,29 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
         .body(Body::from(hold_payload.to_string()))
         .send()
         .await;
-
     assert_that!(hold_response.status(), eq(StatusCode::CREATED));
 
-    let checkout_response = context
+    let with_viewer = format!("/movies/{movie_slug}/seats?viewer={user_uuid}");
+    let r2 = context
+        .app
+        .request(&with_viewer)
+        .method(Method::GET)
+        .send()
+        .await;
+    assert_that!(r2.status(), eq(StatusCode::OK));
+    let j2: serde_json::Value = r2.into_body().into_json().await;
+    let seats = j2["seats"].as_array().expect("seats");
+    let s1 = seats.iter().find(|s| s["seat_uuid"] == "s1").expect("s1");
+    assert_that!(s1["state"].as_str().expect("state"), eq("your_hold"));
+
+    let r3 = context.app.request(&uri).method(Method::GET).send().await;
+    assert_that!(r3.status(), eq(StatusCode::OK));
+    let j3: serde_json::Value = r3.into_body().into_json().await;
+    let seats3 = j3["seats"].as_array().expect("seats");
+    let s1_other = seats3.iter().find(|s| s["seat_uuid"] == "s1").expect("s1");
+    assert_that!(s1_other["state"].as_str().expect("state"), eq("other_hold"));
+
+    let checkout = context
         .app
         .request("/bookings/checkout")
         .method(Method::POST)
@@ -78,24 +101,12 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
         .body(Body::from(hold_payload.to_string()))
         .send()
         .await;
+    assert_that!(checkout.status(), eq(StatusCode::CREATED));
 
-    assert_that!(checkout_response.status(), eq(StatusCode::CREATED));
-    let booking: Booking = checkout_response.into_body().into_json::<Booking>().await;
-    assert_that!(booking.movie_slug, eq(&movie_slug));
-    assert_that!(booking.seat_uuid, eq(seat_uuid));
-    assert_that!(booking.user_uuid, eq(&user_uuid));
-
-    let list_uri = format!("/bookings/movies/{movie_slug}");
-    let list_response = context
-        .app
-        .request(&list_uri)
-        .method(Method::GET)
-        .header(http::header::AUTHORIZATION, TEST_AUTH)
-        .send()
-        .await;
-
-    assert_that!(list_response.status(), eq(StatusCode::OK));
-    let list: Vec<Booking> = list_response.into_body().into_json::<Vec<Booking>>().await;
-    assert_that!(list, len(eq(1)));
-    assert_that!(list[0].uuid, eq(&booking.uuid));
+    let r4 = context.app.request(&uri).method(Method::GET).send().await;
+    assert_that!(r4.status(), eq(StatusCode::OK));
+    let j4: serde_json::Value = r4.into_body().into_json().await;
+    let seats4 = j4["seats"].as_array().expect("seats");
+    let s1_booked = seats4.iter().find(|s| s["seat_uuid"] == "s1").expect("s1");
+    assert_that!(s1_booked["state"].as_str().expect("state"), eq("confirmed"));
 }

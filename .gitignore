@@ -1,5 +1,6 @@
 # Local DB files (keep empty data/ in git via .keep)
 data/*
+web/data/*
 !data/.keep
 
 # Rust specifics
@@ -18,3 +19,4 @@ hurl/vars.trailbase.env
 web/assets/tailwind/tailwindcss
 traildepot/config.textproto
 web/assets/tailwind/node_modules
+traildepot/secrets/keys/public_key.pem

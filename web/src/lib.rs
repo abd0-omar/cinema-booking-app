@@ -16,6 +16,10 @@ pub mod error;
 pub mod middlewares;
 /// Contains the application's route definitions.
 pub mod routes;
+/// Seat index math (`s1` … `sN`, row/column conventions).
+pub mod seat_layout;
+/// Per-seat state for public seat map (bookings + Redis holds).
+pub mod seat_states;
 /// Contains the application state definition and functionality to initialize it.
 pub mod state;
 /// Askama HTML templates.

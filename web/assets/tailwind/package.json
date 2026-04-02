@@ -1,6 +1,9 @@
 {
   "name": "cinema-booking-tailwind",
   "private": true,
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i ./input.css -o ../../static/app.css"
+  },
   "dependencies": {
     "daisyui": "^5.0.43"
   },

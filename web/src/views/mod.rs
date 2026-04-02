@@ -2,6 +2,7 @@
 
 use crate::error::Error;
 use crate::middlewares::auth::TB_ACCESS_TOKEN_COOKIE;
+use crate::seat_states::{merge_movie_seats, seat_grid_element_html, seat_grid_error_html};
 use crate::state::SharedAppState;
 use crate::templates::{CinemaIndex, LoginPage, SignupPage};
 use askama::Template;
@@ -11,6 +12,7 @@ use axum::http::{header, HeaderValue, StatusCode};
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use cinema_booking_auth_adapter_trailbase::trailbase_client::Error as TrailbaseClientError;
+use cinema_booking_db::entities::movies;
 use cookie::time::Duration as CookieDuration;
 use cookie::{Cookie, SameSite};
 use datastar::{axum::ReadSignals, prelude::PatchElements};
@@ -22,14 +24,93 @@ use std::time::Duration;
 const HELLO_MESSAGE: &str = "Hello, world!";
 
 /// `GET /` — Askama-rendered cinema shell.
-pub async fn cinema_index() -> Result<Html<String>, Error> {
+pub async fn cinema_index(State(state): State<SharedAppState>) -> Result<Html<String>, Error> {
     let id = uuid::Uuid::new_v4();
     let compact = id.simple().to_string();
     let short = compact.chars().take(12).collect::<String>();
+    let movies = movies::load_all(&state.db_pool).await?;
     let page = CinemaIndex {
         user_label: format!("user: {short}"),
+        viewer_uuid: id.to_string(),
+        movies,
     };
     Ok(Html(page.render()?))
+}
+
+fn default_seat_map_interval_ms() -> u64 {
+    2000
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SeatMapSignals {
+    pub movie_slug: String,
+    #[serde(default)]
+    pub viewer: Option<String>,
+    #[serde(default = "default_seat_map_interval_ms")]
+    pub interval_ms: u64,
+    #[serde(default)]
+    pub max_ticks: Option<u64>,
+}
+
+async fn seat_map_grid_html(state: &SharedAppState, movie_slug: &str, viewer: &str) -> String {
+    let slug = movie_slug.trim();
+    if slug.is_empty() {
+        return seat_grid_error_html("Pick a film from the list.");
+    }
+
+    let movie = match movies::load(slug, &state.db_pool).await {
+        Ok(m) => m,
+        Err(cinema_booking_db::Error::NoRecordFound) => {
+            return seat_grid_error_html("Film not found.");
+        }
+        Err(_) => return seat_grid_error_html("Could not load film."),
+    };
+
+    let merged = match merge_movie_seats(
+        &movie,
+        viewer,
+        &state.db_pool,
+        state.seat_hold_store.as_ref(),
+    )
+    .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::warn!(error = ?e, "seat_map merge failed");
+            return seat_grid_error_html("Could not load seat map.");
+        }
+    };
+
+    seat_grid_element_html(&movie, &merged.seats)
+}
+
+/// Datastar SSE: patches `#seatGrid` on an interval from merged bookings + Redis holds.
+pub async fn ds_seat_map(
+    State(state): State<SharedAppState>,
+    ReadSignals(signals): ReadSignals<SeatMapSignals>,
+) -> impl IntoResponse {
+    let state = state.clone();
+    let movie_slug = signals.movie_slug;
+    let viewer = signals.viewer.unwrap_or_default();
+    let interval_ms = signals.interval_ms.max(50);
+    let max_ticks = signals.max_ticks;
+
+    let stream = stream! {
+        let mut tick: u64 = 0;
+        loop {
+            let html = seat_map_grid_html(&state, &movie_slug, &viewer).await;
+            yield Ok::<Event, Infallible>(PatchElements::new(html).into());
+            tick += 1;
+            if let Some(max) = max_ticks {
+                if tick >= max {
+                    break;
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(interval_ms)).await;
+        }
+    };
+
+    Sse::new(stream).keep_alive(KeepAlive::default())
 }
 
 #[derive(Debug, Deserialize)]

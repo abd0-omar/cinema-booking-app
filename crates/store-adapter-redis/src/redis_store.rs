@@ -4,7 +4,7 @@ use cinema_booking_store_port::{
     BookingStoreError, SeatHoldChangeset, SeatHoldStore, SeatReservationSession,
     SeatReservationStatus,
 };
-use redis::{aio::MultiplexedConnection, Script};
+use redis::{aio::MultiplexedConnection, AsyncCommands, Script};
 use uuid::Uuid;
 
 const CONFIRM_SCRIPT: &str = r#"
@@ -82,6 +82,15 @@ impl RedisSeatHoldStore {
             format!("seat:{movie_slug}:{seat_uuid}")
         } else {
             format!("{}:seat:{movie_slug}:{seat_uuid}", self.key_prefix)
+        }
+    }
+
+    /// Glob pattern for [`SCAN`](https://redis.io/commands/scan/) over all seat keys for one movie.
+    fn seat_keys_pattern(&self, movie_slug: &str) -> String {
+        if self.key_prefix.is_empty() {
+            format!("seat:{movie_slug}:*")
+        } else {
+            format!("{}:seat:{movie_slug}:*", self.key_prefix)
         }
     }
 }
@@ -171,6 +180,52 @@ impl SeatHoldStore for RedisSeatHoldStore {
                 "redis confirm returned unknown status".to_string(),
             )),
         }
+    }
+
+    async fn list_held_sessions_for_movie(
+        &self,
+        movie_slug: &str,
+    ) -> Result<Vec<SeatReservationSession>, BookingStoreError> {
+        if movie_slug.trim().is_empty() {
+            return Err(BookingStoreError::Validation(
+                "movie_slug must not be empty".to_string(),
+            ));
+        }
+
+        let pattern = self.seat_keys_pattern(movie_slug);
+        let mut connection = self.connection().await?;
+
+        let keys: Vec<String> = {
+            let mut iter: redis::AsyncIter<String> = connection
+                .scan_match(&pattern)
+                .await
+                .map_err(|e| BookingStoreError::Internal(format!("redis SCAN failed: {e}")))?;
+            let mut out = Vec::new();
+            while let Some(key) = iter.next_item().await {
+                out.push(key);
+            }
+            out
+        };
+
+        let mut sessions = Vec::new();
+        for key in keys {
+            let payload: Option<String> = redis::cmd("GET")
+                .arg(&key)
+                .query_async(&mut connection)
+                .await
+                .map_err(|e| BookingStoreError::Internal(format!("redis GET failed: {e}")))?;
+            let Some(payload) = payload else {
+                continue;
+            };
+            let Ok(session) = serde_json::from_str::<SeatReservationSession>(&payload) else {
+                continue;
+            };
+            if session.status == SeatReservationStatus::Held && session.movie_slug == movie_slug {
+                sessions.push(session);
+            }
+        }
+
+        Ok(sessions)
     }
 }
 
@@ -276,5 +331,39 @@ mod tests {
         assert!(matches!(err, BookingStoreError::SessionNotFound));
 
         let _ = store; // keep connection helper used in this module across tests
+    }
+
+    #[tokio::test]
+    async fn list_held_sessions_for_movie_lists_held_and_drops_after_confirm() {
+        let Some(store) = redis_store().await else {
+            return;
+        };
+        let movie = "list-held-movie";
+        let hold1 = SeatHoldChangeset {
+            movie_slug: movie.into(),
+            seat_uuid: "s1".into(),
+            user_uuid: "u1".into(),
+        };
+        let hold2 = SeatHoldChangeset {
+            movie_slug: movie.into(),
+            seat_uuid: "s2".into(),
+            user_uuid: "u2".into(),
+        };
+        store.hold(hold1.clone()).await.unwrap();
+        store.hold(hold2.clone()).await.unwrap();
+
+        let mut list = store.list_held_sessions_for_movie(movie).await.unwrap();
+        assert_eq!(list.len(), 2);
+        list.sort_by(|a, b| a.seat_uuid.cmp(&b.seat_uuid));
+        assert_eq!(list[0].seat_uuid, "s1");
+        assert_eq!(list[1].seat_uuid, "s2");
+
+        store
+            .confirm(movie, &hold1.seat_uuid, &hold1.user_uuid)
+            .await
+            .unwrap();
+        let after = store.list_held_sessions_for_movie(movie).await.unwrap();
+        assert_eq!(after.len(), 1);
+        assert_eq!(after[0].seat_uuid, "s2");
     }
 }

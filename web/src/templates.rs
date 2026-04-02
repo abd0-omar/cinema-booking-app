@@ -1,6 +1,7 @@
 //! Askama template types for HTML responses.
 
 use askama::Template;
+use cinema_booking_db::entities::movies::Movie;
 
 /// Cinema shell page: seat map shell; Datastar is loaded for future reactive UI.
 #[derive(Template)]
@@ -8,6 +9,10 @@ use askama::Template;
 pub struct CinemaIndex {
     /// Short label shown in the header (for example a generated user id).
     pub user_label: String,
+    /// Full demo viewer id (Trailbase `sub` or UUID) for seat map signals / `viewer` query param.
+    pub viewer_uuid: String,
+    /// Films available for booking (from SQLite).
+    pub movies: Vec<Movie>,
 }
 
 /// Trailbase password login form (`GET /login`).
