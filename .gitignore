@@ -1,3 +1,7 @@
+# Local DB files (keep empty data/ in git via .keep)
+data/*
+!data/.keep
+
 # Rust specifics
 **/target
 **/debug
