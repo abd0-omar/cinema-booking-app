@@ -4,41 +4,113 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Create a Cinema Booking account via Trailbase." />
     <title>Sign up — Cinema Booking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
     <link rel="stylesheet" href="/static/app.css" />
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-6 sm:p-8 bg-base-100">
-    <div class="card bg-base-200 shadow-lg w-full max-w-sm">
-        <div class="card-body">
-            <h1 class="text-lg font-semibold tracking-tight">Create account</h1>
-            <p class="text-xs text-base-content/60 mb-4">Registers with your Trailbase instance (same as JWT public key)</p>
-            {% match error_message %}
-            {% when Some with (msg) %}
-            <div role="alert" class="alert alert-error alert-soft text-sm mb-4">{{ msg }}</div>
-            {% when None %}
-            {% endmatch %}
-            <form method="post" action="/signup" autocomplete="on" class="flex flex-col gap-4">
-                <label class="input input-bordered flex flex-col items-stretch gap-1 p-3">
-                    <span class="label text-xs opacity-70">Email</span>
-                    <input id="email" name="email" type="email" required autocomplete="username" />
-                </label>
-                <label class="input input-bordered flex flex-col items-stretch gap-1 p-3">
-                    <span class="label text-xs opacity-70">Password</span>
-                    <input id="password" name="password" type="password" required autocomplete="new-password" />
-                </label>
-                <label class="input input-bordered flex flex-col items-stretch gap-1 p-3">
-                    <span class="label text-xs opacity-70">Confirm password</span>
-                    <input id="password_repeat" name="password_repeat" type="password" required
-                        autocomplete="new-password" />
-                </label>
-                <button type="submit" class="btn btn-primary btn-block">Create account</button>
-            </form>
-            <p class="text-sm text-base-content/70 mt-4">Already have an account? <a href="/login"
-                    class="link link-primary link-hover">Sign in</a></p>
-            <a href="/" class="link link-primary link-hover text-sm mt-2 inline-block">← Back to cinema</a>
+<body
+    class="min-h-screen font-body antialiased bg-base-200 bg-[radial-gradient(ellipse_100%_60%_at_80%_0%,color-mix(in_oklch,var(--color-secondary)_12%,transparent),transparent_45%)]">
+    <a href="#auth-main"
+        class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-box focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-content focus:outline-none">Skip
+        to sign up</a>
+
+    <div
+        class="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] xl:grid-cols-[minmax(0,1.1fr)_minmax(0,24rem)]">
+        <div class="relative border-b border-base-300/60 bg-base-100/40 px-6 py-8 lg:hidden">
+            <p class="font-display text-[0.65rem] font-semibold uppercase tracking-[0.35em] text-secondary">Marquee</p>
+            <p class="mt-1 font-display text-xl font-semibold text-base-content">Cinema Booking</p>
+            <p class="mt-2 text-sm text-base-content/60">Join the guest list for the next screening.</p>
         </div>
+
+        <aside
+            class="relative hidden overflow-hidden border-base-300/60 lg:flex lg:flex-col lg:justify-between lg:border-r lg:p-12 xl:p-16"
+            aria-label="Cinema">
+            <div class="pointer-events-none absolute inset-0 bg-gradient-to-bl from-secondary/16 via-transparent to-accent/18"
+                aria-hidden="true"></div>
+            <div class="pointer-events-none absolute bottom-0 left-0 right-0 flex justify-center gap-2 pb-8 opacity-60"
+                aria-hidden="true">
+                <span class="h-2 w-2 rounded-full bg-accent shadow-[0_0_12px] shadow-accent/70"></span>
+                <span class="h-2 w-2 rounded-full bg-accent shadow-[0_0_12px] shadow-accent/70"></span>
+                <span class="h-2 w-2 rounded-full bg-accent shadow-[0_0_12px] shadow-accent/70"></span>
+                <span class="h-2 w-2 rounded-full bg-accent shadow-[0_0_12px] shadow-accent/70"></span>
+                <span class="h-2 w-2 rounded-full bg-accent shadow-[0_0_12px] shadow-accent/70"></span>
+                <span class="h-2 w-2 rounded-full bg-accent shadow-[0_0_12px] shadow-accent/70"></span>
+                <span class="h-2 w-2 rounded-full bg-accent shadow-[0_0_12px] shadow-accent/70"></span>
+            </div>
+            <div class="relative">
+                <p class="font-display text-xs font-semibold uppercase tracking-[0.38em] text-accent">Cinema Booking</p>
+                <p class="mt-4 font-display text-4xl font-semibold leading-[1.15] text-balance text-base-content xl:text-5xl">
+                    Your name belongs on the list.</p>
+            </div>
+            <p class="relative max-w-sm text-sm leading-relaxed text-base-content/55">Registration talks to Trailbase —
+                aligned with your JWT public key.</p>
+        </aside>
+
+        <main id="auth-main" class="flex items-center justify-center p-6 sm:p-10">
+            <div
+                class="card card-border w-full max-w-md border-base-300/70 bg-base-100/95 shadow-2xl backdrop-blur-sm">
+                <div class="card-body gap-5">
+                    <div class="flex justify-end">
+                        <fieldset class="m-0 min-w-0 border-0 p-0">
+                            <legend class="sr-only">Color theme</legend>
+                            <div class="join join-horizontal">
+                                <label
+                                    class="btn btn-sm join-item border-base-300 btn-outline has-[:checked]:btn-primary has-[:checked]:border-primary">
+                                    <input type="radio" name="cinema-booking-ui-theme" value="lobby"
+                                        class="theme-controller sr-only" />
+                                    Lobby
+                                </label>
+                                <label
+                                    class="btn btn-sm join-item border-base-300 btn-outline has-[:checked]:btn-primary has-[:checked]:border-primary">
+                                    <input type="radio" name="cinema-booking-ui-theme" value="auditorium"
+                                        class="theme-controller sr-only" />
+                                    House lights
+                                </label>
+                            </div>
+                        </fieldset>
+                    </div>
+                    <header>
+                        <h1 class="font-display text-3xl font-semibold text-base-content">Create account</h1>
+                        <p class="mt-1 text-sm text-base-content/60">Three fields — we keep the queue moving.</p>
+                    </header>
+                    {% match error_message %}
+                    {% when Some with (msg) %}
+                    <div role="alert" class="alert alert-error alert-soft text-sm">{{ msg }}</div>
+                    {% when None %}
+                    {% endmatch %}
+                    <form method="post" action="/signup" autocomplete="on" class="flex flex-col gap-4">
+                        <label class="input flex h-auto w-full flex-col items-stretch gap-1.5 px-3 py-3">
+                            <span class="label text-xs text-base-content/55">Email</span>
+                            <input id="email" name="email" type="email" required autocomplete="username" />
+                        </label>
+                        <label class="input flex h-auto w-full flex-col items-stretch gap-1.5 px-3 py-3">
+                            <span class="label text-xs text-base-content/55">Password</span>
+                            <input id="password" name="password" type="password" required
+                                autocomplete="new-password" />
+                        </label>
+                        <label class="input flex h-auto w-full flex-col items-stretch gap-1.5 px-3 py-3">
+                            <span class="label text-xs text-base-content/55">Confirm password</span>
+                            <input id="password_repeat" name="password_repeat" type="password" required
+                                autocomplete="new-password" />
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-block mt-1">Create account</button>
+                    </form>
+                    <p class="text-center text-sm text-base-content/70">Already registered?
+                        <a href="/login" class="link link-primary link-hover font-semibold">Sign in</a>
+                    </p>
+                    <a href="/" class="link link-hover block text-center text-sm text-base-content/50 hover:text-primary">←
+                        Back to cinema</a>
+                </div>
+            </div>
+        </main>
     </div>
+    <script src="/static/theme-persist.js" defer></script>
 </body>
 
 </html>

@@ -13,3 +13,4 @@ hurl/vars.env
 hurl/vars.trailbase.env
 web/assets/tailwind/tailwindcss
 traildepot/config.textproto
+web/assets/tailwind/node_modules

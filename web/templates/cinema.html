@@ -4,79 +4,193 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Pick a film, hold seats in real time, and confirm bookings — cinema booking demo." />
     <title>Cinema Booking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
     <link rel="stylesheet" href="/static/app.css" />
     <script type="module"
         src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js"></script>
 </head>
 
-<body class="min-h-screen bg-base-100 p-6 sm:p-8">
-    <div class="max-w-6xl mx-auto">
-        <header class="navbar bg-base-200 rounded-box mb-8 px-4 py-2 flex-wrap gap-2">
-            <div class="navbar-start">
-                <h1 class="text-xl font-semibold tracking-tight">Cinema Booking</h1>
+<body
+    class="min-h-screen font-body antialiased bg-base-200 bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,color-mix(in_oklch,var(--color-primary)_18%,transparent),transparent_55%),radial-gradient(ellipse_80%_50%_at_100%_50%,color-mix(in_oklch,var(--color-secondary)_12%,transparent),transparent_50%),radial-gradient(ellipse_80%_50%_at_0%_80%,color-mix(in_oklch,var(--color-accent)_10%,transparent),transparent_45%)]">
+    <div class="pointer-events-none fixed inset-0 overflow-hidden opacity-[0.035]" aria-hidden="true"
+        style="background-image: url(&quot;data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;);">
+    </div>
+
+    <a href="#main-content"
+        class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-box focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-content focus:outline-none">Skip
+        to main content</a>
+
+    <div class="relative mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        <header
+            class="navbar mb-8 flex-wrap gap-3 rounded-box border border-base-300/70 bg-base-100/85 px-3 py-2 shadow-lg backdrop-blur-md sm:gap-2 sm:px-4">
+            <div class="navbar-start min-w-0 flex-1 gap-3 sm:flex-none">
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-box border border-secondary/40 bg-gradient-to-br from-secondary/25 to-primary/20 text-sm font-display font-semibold text-primary shadow-sm"
+                    aria-hidden="true">
+                    <span class="leading-none tracking-tight">24</span>
+                </div>
+                <div class="min-w-0 flex flex-col leading-tight">
+                    <p
+                        class="font-display text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-secondary sm:text-xs">
+                        Marquee</p>
+                    <h1
+                        class="font-display truncate text-xl font-semibold tracking-tight text-base-content sm:text-2xl">
+                        Cinema Booking</h1>
+                    <p class="hidden text-xs text-base-content/55 sm:block">Hold seats · Live holds · Confirmed bookings
+                    </p>
+                </div>
             </div>
-            <div class="navbar-end flex flex-wrap items-center gap-2">
-                <a href="/signup" class="btn btn-ghost btn-sm">Sign up</a>
-                <a href="/login" class="btn btn-ghost btn-sm">Log in</a>
-                <form method="post" action="/logout" class="m-0 inline">
-                    <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
-                </form>
-                <span class="badge badge-neutral badge-sm whitespace-normal max-w-full">{{ user_label }}</span>
+            <div class="navbar-end w-full justify-end sm:w-auto">
+                <div class="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+                    <fieldset class="m-0 min-w-0 border-0 p-0">
+                        <legend class="sr-only">Color theme</legend>
+                        <div class="join join-horizontal">
+                            <label
+                                class="btn btn-sm join-item border-base-300 btn-outline has-[:checked]:btn-primary has-[:checked]:border-primary">
+                                <input type="radio" name="cinema-booking-ui-theme" value="lobby"
+                                    class="theme-controller sr-only" />
+                                Lobby
+                            </label>
+                            <label
+                                class="btn btn-sm join-item border-base-300 btn-outline has-[:checked]:btn-primary has-[:checked]:border-primary">
+                                <input type="radio" name="cinema-booking-ui-theme" value="auditorium"
+                                    class="theme-controller sr-only" />
+                                House lights
+                            </label>
+                        </div>
+                    </fieldset>
+                    <details class="dropdown dropdown-end sm:hidden">
+                        <summary
+                            class="btn btn-ghost btn-sm cursor-pointer list-none [&::-webkit-details-marker]:hidden"
+                            aria-label="Open account menu">
+                            Menu
+                            <span class="opacity-60" aria-hidden="true">▾</span>
+                        </summary>
+                        <ul
+                            class="menu dropdown-content z-50 mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+                            <li><a href="/signup" class="font-medium">Sign up</a></li>
+                            <li><a href="/login" class="font-medium">Log in</a></li>
+                            <li>
+                                <form method="post" action="/logout" class="w-full">
+                                    <button type="submit" class="w-full text-start font-medium">Log out</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </details>
+                    <div class="hidden items-center gap-1 sm:flex sm:gap-2">
+                        <a href="/signup" class="btn btn-ghost btn-sm">Sign up</a>
+                        <a href="/login" class="btn btn-ghost btn-sm">Log in</a>
+                        <form method="post" action="/logout" class="m-0 inline">
+                            <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
+                        </form>
+                    </div>
+                    <span class="badge badge-neutral badge-sm max-w-[10rem] truncate sm:max-w-[14rem]">{{ user_label
+                        }}</span>
+                </div>
             </div>
         </header>
 
-        <section class="card bg-base-200 shadow-sm mb-8 max-w-xl" data-signals:delay="400">
-            <div class="card-body">
-                <h2 class="card-title text-primary">Datastar demo</h2>
-                <p class="text-sm text-base-content/70 mb-4">SSE patches stream from the server (Rust + datastar crate).
-                    Adjust delay between character steps.</p>
-                <div class="flex flex-wrap items-center gap-3 mb-4">
-                    <label class="text-xs text-base-content/60" for="delay">Delay (ms)</label>
-                    <input data-bind:delay id="delay" type="number" step="50" min="0" value="400"
-                        class="input input-bordered input-sm w-28" />
+        <main id="main-content">
+            <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="font-display text-xs font-semibold uppercase tracking-[0.35em] text-secondary">Program</p>
+                    <h2 class="font-display text-2xl font-semibold text-base-content sm:text-3xl">Now showing</h2>
+                    <p class="mt-1 max-w-xl text-sm text-base-content/65">Choose a title to open the auditorium and pick
+                        seats. Holds expire; confirm to save your booking.</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-3 mb-4">
-                    <button type="button" class="btn btn-primary btn-sm" data-on:click="@get('/ds/hello-world')">Stream
-                        hello</button>
-                </div>
-                <div id="message" class="text-2xl font-semibold mt-2 text-base-content">Hello, world!</div>
+                <span class="badge badge-outline badge-neutral badge-lg hidden sm:inline-flex">Feature grid</span>
             </div>
-        </section>
 
-        <div class="flex flex-wrap gap-4 mb-8" id="movieList">
-            <div class="w-full text-center text-base-content/60 py-12 text-sm">Movies load here when the cinema API is
-                wired up.</div>
-        </div>
-
-        <div class="flex flex-wrap gap-8 items-start" id="mainContent" style="display: none">
-            <div class="flex-1 min-w-[300px]">
-                <div class="text-center text-xs uppercase tracking-widest text-base-content/60 mb-2">Screen</div>
-                <div class="h-0.5 bg-linear-to-r from-transparent via-primary to-transparent rounded-sm mx-8 mb-6">
+            <div class="mb-2 flex justify-center" aria-hidden="true">
+                <div
+                    class="h-1 w-full max-w-2xl rounded-full bg-gradient-to-r from-transparent via-primary/50 to-transparent">
                 </div>
-                <div class="flex flex-col items-center gap-2" id="seatGrid"></div>
-                <div class="flex flex-wrap justify-center gap-5 mt-6 text-xs text-base-content/60">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3.5 h-3 rounded-t-md rounded-b-sm bg-base-300" aria-hidden="true"></div>
-                        Available
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3.5 h-3 rounded-t-md rounded-b-sm bg-warning" aria-hidden="true"></div>
-                        Your hold
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3.5 h-3 rounded-t-md rounded-b-sm bg-secondary" aria-hidden="true"></div>
-                        Other hold
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3.5 h-3 rounded-t-md rounded-b-sm bg-error" aria-hidden="true"></div>
-                        Confirmed
+            </div>
+
+            <div class="mb-10 flex flex-wrap gap-4" id="movieList" role="list" aria-label="Films">
+                <div role="listitem"
+                    class="card card-dash w-full border-base-300/60 bg-base-100/50 py-12 text-center text-sm text-base-content/55">
+                    <div class="card-body items-center gap-3 py-6">
+                        <div class="flex items-center gap-1 rounded-box border border-dashed border-primary/25 bg-primary/5 px-4 py-3"
+                            aria-hidden="true">
+                            <span class="h-10 w-2.5 rounded-sm bg-primary/30"></span>
+                            <span class="h-10 w-2.5 rounded-sm bg-primary/30"></span>
+                            <span class="h-10 w-2.5 rounded-sm bg-primary/30"></span>
+                            <span class="h-10 w-2.5 rounded-sm bg-primary/30"></span>
+                        </div>
+                        <p class="max-w-md leading-relaxed">No posters on the wall yet. When the page loads titles from
+                            <code class="rounded bg-base-200 px-1 py-0.5 text-xs text-base-content/80">/movies</code>,
+                            each film will show up here as a card.
+                        </p>
                     </div>
                 </div>
             </div>
-            <div id="checkoutArea"></div>
-        </div>
+
+            <div class="flex flex-wrap items-start gap-8" id="mainContent" style="display: none">
+                <div
+                    class="card card-border min-w-[min(100%,300px)] flex-1 border-base-300/80 bg-base-100/90 shadow-lg">
+                    <div class="card-body items-center gap-0 pt-6">
+                        <div class="relative mb-6 w-full max-w-lg px-4">
+                            <div class="absolute -inset-x-2 -top-3 h-16 rounded-[100%] bg-gradient-to-b from-primary/20 via-primary/5 to-transparent blur-md"
+                                aria-hidden="true"></div>
+                            <div
+                                class="relative mx-auto aspect-[21/9] max-h-24 w-full rounded-lg border border-base-300/80 bg-gradient-to-b from-base-300/40 to-base-200/80 shadow-[0_0_40px_-8px] shadow-primary/30 ring-1 ring-primary/10">
+                            </div>
+                            <p
+                                class="mt-2 text-center font-display text-[0.65rem] font-semibold uppercase tracking-[0.4em] text-base-content/45">
+                                Screen</p>
+                        </div>
+                        <p class="font-display text-sm font-semibold uppercase tracking-[0.35em] text-primary">
+                            Auditorium
+                        </p>
+                        <div class="my-2 h-px w-full max-w-md bg-gradient-to-r from-transparent via-primary/60 to-transparent"
+                            aria-hidden="true"></div>
+                        <div class="flex w-full flex-col items-center gap-2" id="seatGrid" role="group"
+                            aria-label="Seat map"></div>
+                        <div class="divider text-xs text-base-content/45">Legend</div>
+                        <ul class="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-base-content/60"
+                            aria-label="Seat status legend">
+                            <li class="flex items-center gap-2">
+                                <span class="h-3.5 w-3.5 rounded-t-md rounded-b-sm bg-base-300"
+                                    aria-hidden="true"></span>
+                                Available
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="h-3.5 w-3.5 rounded-t-md rounded-b-sm bg-warning"
+                                    aria-hidden="true"></span>
+                                Your hold
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="h-3.5 w-3.5 rounded-t-md rounded-b-sm bg-secondary"
+                                    aria-hidden="true"></span>
+                                Other hold
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="h-3.5 w-3.5 rounded-t-md rounded-b-sm bg-error" aria-hidden="true"></span>
+                                Booked
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <aside id="checkoutArea" class="min-w-[min(100%,260px)] flex-1 sm:max-w-sm" aria-label="Checkout">
+                </aside>
+            </div>
+        </main>
+
+        <footer
+            class="footer footer-center mt-16 border-t border-base-300/50 bg-transparent py-8 text-base-content/45 sm:footer-horizontal">
+            <aside class="grid-flow-col items-center gap-4 text-center text-xs sm:text-sm">
+                <p>Rust · SQLite · Redis holds · Datastar — built for dependable seat selection and bookings.</p>
+            </aside>
+        </footer>
     </div>
+    <script src="/static/theme-persist.js" defer></script>
 </body>
 
 </html>

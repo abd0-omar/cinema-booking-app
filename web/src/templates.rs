@@ -2,7 +2,7 @@
 
 use askama::Template;
 
-/// Cinema shell page: layout from the legacy `static.html` prototype plus a Datastar demo block.
+/// Cinema shell page: seat map shell; Datastar is loaded for future reactive UI.
 #[derive(Template)]
 #[template(path = "cinema.html")]
 pub struct CinemaIndex {

@@ -1,0 +1,10 @@
+{
+  "name": "cinema-booking-tailwind",
+  "private": true,
+  "dependencies": {
+    "daisyui": "^5.0.43"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.2.2"
+  }
+}
