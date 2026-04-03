@@ -1,12 +1,17 @@
 /**
  * Seat hold / checkout: Datastar expressions are not full JS; use native fetch here.
- * Reads movie slug from #cinemaMovieSlug (set by the film list Datastar handler).
+ * Prefers `data-movie-slug` on #seatGrid (server-rendered with the map), then #cinemaMovieSlug.
  */
 (function () {
   const main = document.getElementById("main-content");
   if (!main) return;
 
   function movieSlug() {
+    const grid = document.getElementById("seatGrid");
+    const fromGrid = grid?.dataset?.movieSlug;
+    if (fromGrid && fromGrid.trim()) {
+      return fromGrid.trim();
+    }
     const el = document.getElementById("cinemaMovieSlug");
     return el ? el.value.trim() : "";
   }

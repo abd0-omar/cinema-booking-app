@@ -202,9 +202,10 @@ pub fn seat_grid_element_html(movie: &Movie, seats: &[SeatStateDto]) -> String {
         "{} seat map with {} rows and {} seats per row",
         movie.title, rows, cols
     ));
+    let movie_slug_attr = escape_html_attr(&movie.slug);
 
     format!(
-        r#"<div id="seatGrid" class="w-max max-w-full" role="group" aria-label="{map_label}"><div class="w-full rounded-box border border-base-300/60 bg-base-100/70 px-2 py-3 sm:px-4"><div class="flex w-full flex-col items-stretch gap-2 sm:gap-2.5">{rows_html}</div></div></div>"#
+        r#"<div id="seatGrid" class="w-max max-w-full" role="group" aria-label="{map_label}" data-movie-slug="{movie_slug_attr}"><div class="w-full rounded-box border border-base-300/60 bg-base-100/70 px-2 py-3 sm:px-4"><div class="flex w-full flex-col items-stretch gap-2 sm:gap-2.5">{rows_html}</div></div></div>"#
     )
 }
 
