@@ -11,6 +11,8 @@ pub struct CinemaIndex {
     pub user_label: String,
     /// Full demo viewer id (Trailbase `sub` or UUID) for seat map signals / `viewer` query param.
     pub viewer_uuid: String,
+    /// Whether the user is authenticated (session cookie / JWT). Guests still get a `viewer_uuid` for the map.
+    pub authenticated: bool,
     /// Films available for booking (from SQLite).
     pub movies: Vec<Movie>,
 }

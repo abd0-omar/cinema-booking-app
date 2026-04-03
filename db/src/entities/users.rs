@@ -43,3 +43,29 @@ pub async fn load(
     .fetch_optional(executor)
     .await?)
 }
+
+/// Creates or updates a user row for an authenticated subject.
+///
+/// `uuid` is the stable auth subject id (for example Trailbase `sub`).
+pub async fn upsert_for_auth_subject(
+    uuid: &str,
+    name: &str,
+    token: &str,
+    executor: impl sqlx::Executor<'_, Database = Sqlite>,
+) -> Result<(), crate::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO users (uuid, name, token)
+        VALUES (?1, ?2, ?3)
+        ON CONFLICT(uuid) DO UPDATE SET
+            name = excluded.name,
+            token = excluded.token
+        "#,
+        uuid,
+        name,
+        token,
+    )
+    .execute(executor)
+    .await?;
+    Ok(())
+}

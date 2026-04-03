@@ -4,22 +4,19 @@ use axum::{
 };
 use cinema_booking_db::entities::bookings::Booking;
 use cinema_booking_db::entities::movies::{self, MovieChangeset};
-use cinema_booking_db::test_helpers::users::{create as create_user, UserChangeset};
+use cinema_booking_db::entities::users;
 use cinema_booking_macros::db_test;
 use cinema_booking_web::test_helpers::{BodyExt, DbTestContext, RouterExt};
-use fake::{Fake, Faker};
 use googletest::prelude::*;
 use hyper::StatusCode;
 use serde_json::json;
 
 const TEST_AUTH: &str = "Bearer test-bearer-token";
 
-async fn seed_user_uuid(pool: &cinema_booking_db::DbPool) -> String {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset, pool)
+async fn seed_auth_user(pool: &cinema_booking_db::DbPool) {
+    users::upsert_for_auth_subject("test-sub", "test user", "", pool)
         .await
-        .expect("seed user")
-        .uuid
+        .expect("seed auth user");
 }
 
 #[db_test]
@@ -37,7 +34,7 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
         return;
     }
 
-    let user_uuid = seed_user_uuid(&context.db_pool).await;
+    seed_auth_user(&context.db_pool).await;
     let movie_slug = movies::create(
         MovieChangeset {
             title: "API test movie".into(),
@@ -54,7 +51,6 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
     let hold_payload = json!({
         "movie_slug": movie_slug,
         "seat_uuid": seat_uuid,
-        "user_uuid": user_uuid,
     });
 
     let hold_response = context
@@ -83,7 +79,7 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
     let booking: Booking = checkout_response.into_body().into_json::<Booking>().await;
     assert_that!(booking.movie_slug, eq(&movie_slug));
     assert_that!(booking.seat_uuid, eq(seat_uuid));
-    assert_that!(booking.user_uuid, eq(&user_uuid));
+    assert_that!(booking.user_uuid, eq("test-sub"));
 
     let list_uri = format!("/bookings/movies/{movie_slug}");
     let list_response = context

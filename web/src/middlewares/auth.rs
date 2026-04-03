@@ -40,6 +40,20 @@ pub async fn auth(
     }
 }
 
+/// Reads and verifies principal from request headers when present.
+///
+/// Returns `None` when no auth is provided or verification fails.
+pub fn extract_optional_principal_from_headers(
+    headers: &HeaderMap,
+    app_state: &SharedAppState,
+) -> Option<cinema_booking_auth::Principal> {
+    let jwt = jwt_from_request(headers).ok()?;
+    app_state
+        .access_token_verifier
+        .verify_bearer_token(jwt)
+        .ok()
+}
+
 fn jwt_from_request(headers: &HeaderMap) -> Result<&str, &'static str> {
     if let Some(auth_header) = headers
         .get(http::header::AUTHORIZATION)

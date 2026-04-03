@@ -117,30 +117,94 @@ fn escape_html_attr(s: &str) -> String {
         .collect()
 }
 
+fn row_label(mut row: i64) -> String {
+    if row <= 0 {
+        return "?".to_string();
+    }
+    let mut out = String::new();
+    while row > 0 {
+        let rem = ((row - 1) % 26) as u8;
+        out.insert(0, (b'A' + rem) as char);
+        row = (row - 1) / 26;
+    }
+    out
+}
+
 /// Builds the HTML fragment Datastar patches into `#seatGrid` (include the element with that id).
 pub fn seat_grid_element_html(movie: &Movie, seats: &[SeatStateDto]) -> String {
-    let m = movie.seats_per_row.max(0) as usize;
-    let grid_style = format!("grid-template-columns: repeat({m}, minmax(0, 1fr));");
+    let rows = movie.row_count.max(0);
+    let cols = movie.seats_per_row.max(0);
+    let aisle_after = if cols >= 8 { cols / 2 } else { 0 };
 
-    let buttons: String = seats
-        .iter()
-        .map(|s| {
-            let bg_class = match s.state {
-                SeatStateKind::Available => "bg-base-300",
-                SeatStateKind::YourHold => "bg-warning",
-                SeatStateKind::OtherHold => "bg-secondary",
-                SeatStateKind::Confirmed => "bg-error",
+    let mut by_row: HashMap<i64, Vec<&SeatStateDto>> = HashMap::new();
+    for seat in seats {
+        by_row.entry(seat.row).or_default().push(seat);
+    }
+
+    let mut rows_html = String::new();
+    for row in 1..=rows {
+        let row_name = row_label(row);
+        let row_name_html = escape_html_attr(&row_name);
+        let mut seat_cells = by_row.remove(&row).unwrap_or_default();
+        seat_cells.sort_by_key(|s| s.col);
+
+        let mut seats_html = String::new();
+        for seat in seat_cells {
+            let (state_class, state_label, inner_class, state_key) = match seat.state {
+                SeatStateKind::Available => (
+                    "border-base-300/90 bg-base-300/80 shadow-inner shadow-base-content/5 hover:-translate-y-px hover:border-primary/50 hover:bg-base-300 hover:shadow-md",
+                    "available",
+                    "bg-base-content/15",
+                    "available",
+                ),
+                SeatStateKind::YourHold => (
+                    "border-warning/80 bg-warning/85 shadow-inner shadow-warning/20 hover:-translate-y-px hover:border-warning hover:bg-warning hover:shadow-md",
+                    "your hold",
+                    "bg-warning-content/25",
+                    "your_hold",
+                ),
+                SeatStateKind::OtherHold => (
+                    "border-secondary/80 bg-secondary/85 shadow-inner shadow-secondary/20 hover:-translate-y-px hover:border-secondary hover:bg-secondary hover:shadow-md",
+                    "held by another viewer",
+                    "bg-secondary-content/25",
+                    "other_hold",
+                ),
+                SeatStateKind::Confirmed => (
+                    "border-error/80 bg-error/90 shadow-inner shadow-error/25 opacity-95 hover:-translate-y-px hover:border-error hover:bg-error",
+                    "booked",
+                    "bg-error-content/30",
+                    "confirmed",
+                ),
             };
-            let label = escape_html_attr(&s.seat_uuid);
-            let aria = escape_html_attr(&format!("Seat row {} column {}", s.row, s.col));
-            format!(
-                r#"<button type="button" class="btn btn-sm min-h-8 w-full px-0 {bg_class} border-0" data-seat="{label}" aria-label="{aria}">{label}</button>"#
-            )
-        })
-        .collect();
+
+            let seat_uuid = escape_html_attr(&seat.seat_uuid);
+            let aria = escape_html_attr(&format!(
+                "Row {}, Seat {}, {}",
+                row_name, seat.col, state_label
+            ));
+            seats_html.push_str(&format!(
+                r#"<button type="button" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-t-md rounded-b-sm border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-base-100 {state_class}" data-seat="{seat_uuid}" data-state="{state_key}" aria-label="{aria}"><span class="h-2 w-3 rounded-sm {inner_class} opacity-90" aria-hidden="true"></span></button>"#
+            ));
+
+            if aisle_after > 0 && seat.col == aisle_after {
+                seats_html.push_str(
+                    r#"<span class="mx-1 hidden h-10 w-4 rounded bg-base-300/35 sm:inline-block" aria-hidden="true"></span>"#,
+                );
+            }
+        }
+
+        rows_html.push_str(&format!(
+            r#"<div class="flex w-full min-w-0 items-stretch gap-2 rounded-xl border border-base-300/50 bg-base-200/40 px-2 py-2 sm:gap-3 sm:px-3"><div class="flex w-9 shrink-0 items-center justify-center self-stretch rounded-lg border border-base-300/60 bg-base-100/90 font-display text-sm font-bold tabular-nums text-base-content/80 shadow-sm" aria-hidden="true">{row_name_html}</div><div class="min-w-0 flex-1 overflow-x-auto overscroll-x-contain"><div class="flex w-max items-center justify-start gap-1.5 sm:gap-2">{seats_html}</div></div></div>"#
+        ));
+    }
+
+    let map_label = escape_html_attr(&format!(
+        "{} seat map with {} rows and {} seats per row",
+        movie.title, rows, cols
+    ));
 
     format!(
-        r#"<div id="seatGrid" class="grid w-full max-w-xl gap-1" style="{grid_style}" role="group" aria-label="Seat map">{buttons}</div>"#
+        r#"<div id="seatGrid" class="w-full max-w-3xl" role="group" aria-label="{map_label}"><div class="w-full rounded-box border border-base-300/60 bg-base-100/70 px-2 py-3 sm:px-4"><div class="flex flex-col gap-2 sm:gap-2.5">{rows_html}</div></div></div>"#
     )
 }
 

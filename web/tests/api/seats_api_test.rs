@@ -3,22 +3,19 @@ use axum::{
     http::{self, Method},
 };
 use cinema_booking_db::entities::movies::{self, MovieChangeset};
-use cinema_booking_db::test_helpers::users::{create as create_user, UserChangeset};
+use cinema_booking_db::entities::users;
 use cinema_booking_macros::db_test;
 use cinema_booking_web::test_helpers::{BodyExt, DbTestContext, RouterExt};
-use fake::{Fake, Faker};
 use googletest::prelude::*;
 use hyper::StatusCode;
 use serde_json::json;
 
 const TEST_AUTH: &str = "Bearer test-bearer-token";
 
-async fn seed_user_uuid(pool: &cinema_booking_db::DbPool) -> String {
-    let user_changeset: UserChangeset = Faker.fake();
-    create_user(user_changeset, pool)
+async fn seed_auth_user(pool: &cinema_booking_db::DbPool) {
+    users::upsert_for_auth_subject("test-sub", "test user", "", pool)
         .await
-        .expect("seed user")
-        .uuid
+        .expect("seed auth user");
 }
 
 #[db_test]
@@ -36,7 +33,7 @@ async fn test_get_movie_seats_layout_and_states(context: &DbTestContext) {
         return;
     }
 
-    let user_uuid = seed_user_uuid(&context.db_pool).await;
+    seed_auth_user(&context.db_pool).await;
     let movie_slug = movies::create(
         MovieChangeset {
             title: "Seats API film".into(),
@@ -59,7 +56,6 @@ async fn test_get_movie_seats_layout_and_states(context: &DbTestContext) {
     let hold_payload = json!({
         "movie_slug": movie_slug,
         "seat_uuid": "s1",
-        "user_uuid": user_uuid,
     });
     let hold_response = context
         .app
@@ -72,7 +68,8 @@ async fn test_get_movie_seats_layout_and_states(context: &DbTestContext) {
         .await;
     assert_that!(hold_response.status(), eq(StatusCode::CREATED));
 
-    let with_viewer = format!("/movies/{movie_slug}/seats?viewer={user_uuid}");
+    // Hold uses `principal.sub` from the test JWT (`test-sub`), not the JSON body.
+    let with_viewer = format!("/movies/{movie_slug}/seats?viewer=test-sub");
     let r2 = context
         .app
         .request(&with_viewer)

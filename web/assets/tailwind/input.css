@@ -4,6 +4,7 @@
 @source not "./node_modules/**";
 
 @source "../../templates/**/*.html";
+@source "../../src/**/*.rs";
 
 @plugin "daisyui" {
   themes: lobby --default, auditorium --prefersdark;

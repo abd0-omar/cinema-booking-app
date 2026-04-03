@@ -1,6 +1,7 @@
 //! Server-rendered HTML and Datastar (SSE) handlers.
 
 use crate::error::Error;
+use crate::middlewares::auth::extract_optional_principal_from_headers;
 use crate::middlewares::auth::TB_ACCESS_TOKEN_COOKIE;
 use crate::seat_states::{merge_movie_seats, seat_grid_element_html, seat_grid_error_html};
 use crate::state::SharedAppState;
@@ -8,11 +9,11 @@ use crate::templates::{CinemaIndex, LoginPage, SignupPage};
 use askama::Template;
 use async_stream::stream;
 use axum::extract::{Form, Query, State};
-use axum::http::{header, HeaderValue, StatusCode};
+use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use cinema_booking_auth_adapter_trailbase::trailbase_client::Error as TrailbaseClientError;
-use cinema_booking_db::entities::movies;
+use cinema_booking_db::entities::{movies, users};
 use cookie::time::Duration as CookieDuration;
 use cookie::{Cookie, SameSite};
 use datastar::{axum::ReadSignals, prelude::PatchElements};
@@ -29,14 +30,24 @@ const HELLO_MESSAGE: &str = "Hello, world!";
 const DEFAULT_SEAT_MAP_MAX_TICKS: u64 = 150;
 
 /// `GET /` — Askama-rendered cinema shell.
-pub async fn cinema_index(State(state): State<SharedAppState>) -> Result<Html<String>, Error> {
-    let id = uuid::Uuid::new_v4();
-    let compact = id.simple().to_string();
-    let short = compact.chars().take(12).collect::<String>();
+pub async fn cinema_index(
+    State(state): State<SharedAppState>,
+    headers: HeaderMap,
+) -> Result<Html<String>, Error> {
+    let principal = extract_optional_principal_from_headers(&headers, &state);
     let movies = movies::load_all(&state.db_pool).await?;
+    let (user_label, viewer_uuid, authenticated) = if let Some(principal) = principal {
+        (principal.email, principal.sub, true)
+    } else {
+        let id = uuid::Uuid::new_v4();
+        let compact = id.simple().to_string();
+        let short = compact.chars().take(12).collect::<String>();
+        (format!("guest: {short}"), compact, false)
+    };
     let page = CinemaIndex {
-        user_label: format!("user: {short}"),
-        viewer_uuid: id.to_string(),
+        user_label,
+        viewer_uuid,
+        authenticated,
         movies,
     };
     Ok(Html(page.render()?))
@@ -94,7 +105,12 @@ pub async fn seat_map_snapshot(
     State(state): State<SharedAppState>,
     Query(params): Query<SeatMapSignals>,
 ) -> Result<Html<String>, Error> {
-    let html = seat_map_grid_html(&state, &params.movie_slug, params.viewer.as_deref().unwrap_or_default()).await;
+    let html = seat_map_grid_html(
+        &state,
+        &params.movie_slug,
+        params.viewer.as_deref().unwrap_or_default(),
+    )
+    .await;
     Ok(Html(html))
 }
 
@@ -196,6 +212,23 @@ pub async fn login_post(
                 tracing::error!("login succeeded but no tokens on client");
                 return redirect_login_error("failed");
             };
+            let principal = match state
+                .access_token_verifier
+                .verify_bearer_token(&tokens.auth_token)
+            {
+                Ok(principal) => principal,
+                Err(e) => {
+                    tracing::warn!(?e, "token verification failed after login");
+                    return redirect_login_error("failed");
+                }
+            };
+            if let Err(e) =
+                users::upsert_for_auth_subject(&principal.sub, &principal.email, "", &state.db_pool)
+                    .await
+            {
+                tracing::warn!(?e, "users upsert failed after login");
+                return redirect_login_error("failed");
+            }
             set_session_cookie_redirect(&tokens.auth_token, Redirect::to("/"))
         }
         Ok(Some(_)) => redirect_login_error("mfa"),

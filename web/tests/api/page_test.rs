@@ -24,7 +24,7 @@ async fn test_get_index_html(context: &DbTestContext) {
     let html = String::from_utf8(body.to_vec()).expect("utf8");
     assert_that!(html, contains_substring("Cinema Booking"));
     assert_that!(html, contains_substring("datastar.js"));
-    assert_that!(html, contains_substring("user:"));
+    assert_that!(html, contains_substring("guest:"));
     assert_that!(html, contains_substring("Log in"));
     assert_that!(html, contains_substring("Sign up"));
 }

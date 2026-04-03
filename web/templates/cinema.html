@@ -97,7 +97,9 @@
         </header>
 
         <main id="main-content"
-            data-signals='{"movie_slug":"","viewer":"{{ viewer_uuid }}","interval_ms":2000}'>
+            data-signals='{"movie_slug":"","viewer":"{{ viewer_uuid }}","authenticated":{{ authenticated }},"interval_ms":2000,"booking_feedback":""}'>
+            <input type="hidden" id="cinemaMovieSlug" value="" autocomplete="off" />
+            <input type="hidden" id="cinemaViewer" value="{{ viewer_uuid }}" autocomplete="off" />
             <div class="mb-6">
                 <p class="font-display text-xs font-semibold uppercase tracking-[0.35em] text-secondary">Program</p>
                 <h2 class="font-display text-2xl font-semibold text-base-content sm:text-3xl">Now showing</h2>
@@ -106,12 +108,21 @@
 
             <ul class="mb-10 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3" id="movieList"
                 role="list" aria-label="Films"
-                data-on:click="$movie_slug = evt.target.closest('[data-movie-slug]')?.dataset?.movieSlug; if (!$movie_slug) return; document.getElementById('mainContent').classList.remove('hidden'); @get('/seat-map-snapshot?movie_slug=' + encodeURIComponent($movie_slug) + '&viewer=' + encodeURIComponent($viewer))">
+                data-on:click="$movie_slug = evt.target.closest('[data-movie-slug]')?.dataset?.movieSlug; if (!$movie_slug) return; const list = document.getElementById('movieList'); list.querySelectorAll('[data-movie-button]').forEach((el) => { el.setAttribute('aria-pressed', 'false'); el.classList.remove('border-primary', 'bg-primary/10', 'shadow-primary/20'); }); const selected = evt.target.closest('[data-movie-button]'); if (selected) { selected.setAttribute('aria-pressed', 'true'); selected.classList.add('border-primary', 'bg-primary/10', 'shadow-primary/20'); } document.getElementById('mainContent').classList.remove('hidden'); document.getElementById('seatMapHelper').classList.remove('hidden'); document.getElementById('bookingFeedback').innerHTML = ''; document.getElementById('seatGrid').innerHTML = '<div class=&quot;flex w-full max-w-xl items-center justify-center gap-2 rounded-box border border-base-300 bg-base-100/80 px-4 py-4 text-sm text-base-content/65&quot;><span class=&quot;loading loading-spinner loading-sm&quot;></span>Loading seat map...</div>'; const summaryText = $authenticated ? 'Click an available seat to hold it. Click your held seat again to confirm booking.' : 'Sign in to hold and confirm seats.'; document.getElementById('checkoutArea').innerHTML = '<div class=&quot;card card-border border-base-300 bg-base-100/80&quot;><div class=&quot;card-body p-4&quot;><p class=&quot;text-sm text-base-content/65&quot;>' + summaryText + '</p></div></div>'; document.getElementById('cinemaMovieSlug').value = $movie_slug; @get('/seat-map-snapshot?movie_slug=' + encodeURIComponent($movie_slug) + '&viewer=' + encodeURIComponent($viewer))">
                 {% for movie in movies %}
-                <li role="listitem" data-movie-slug="{{ movie.slug }}"
-                    class="min-w-0 rounded-box border border-base-300 bg-base-100 px-4 py-3">
-                    <p class="font-display font-semibold text-base-content">{{ movie.title }}</p>
-                    <p class="mt-0.5 text-sm text-base-content/60">{{ movie.row_count }} rows · {{ movie.seats_per_row }} seats per row</p>
+                <li role="listitem" class="min-w-0">
+                    <button type="button" role="button" tabindex="0" aria-pressed="false" data-movie-button
+                        data-movie-slug="{{ movie.slug }}"
+                        class="group flex w-full flex-col items-start gap-1 rounded-box border border-base-300 bg-base-100 px-4 py-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-base-200">
+                        <p class="font-display text-lg font-semibold text-base-content">{{ movie.title }}</p>
+                        <p class="text-sm text-base-content/60">{{ movie.row_count }} rows · {{ movie.seats_per_row }}
+                            seats per row</p>
+                        <span
+                            class="mt-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 group-hover:text-primary">
+                            Select film
+                            <span aria-hidden="true">-></span>
+                        </span>
+                    </button>
                 </li>
                 {% else %}
                 <li role="listitem"
@@ -146,6 +157,10 @@
                         </p>
                         <div class="my-2 h-px w-full max-w-md bg-gradient-to-r from-transparent via-primary/60 to-transparent"
                             aria-hidden="true"></div>
+                        <p id="seatMapHelper"
+                            class="mb-2 hidden rounded-box border border-primary/20 bg-primary/10 px-3 py-2 text-center text-xs text-base-content/75">
+                            Select seats to hold them. Holds expire automatically if you do not checkout.
+                        </p>
                         <div class="flex w-full flex-col items-center gap-2" id="seatGrid" role="group"
                             aria-label="Seat map"></div>
                         <div class="divider text-xs text-base-content/45">Legend</div>
@@ -174,6 +189,12 @@
                     </div>
                 </div>
                 <aside id="checkoutArea" class="min-w-[min(100%,260px)] flex-1 sm:max-w-sm" aria-label="Checkout">
+                    <div class="card card-border border-base-300 bg-base-100/70">
+                        <div class="card-body p-4">
+                            <p class="text-sm text-base-content/65">Pick a movie to begin seat selection.</p>
+                        </div>
+                    </div>
+                    <div id="bookingFeedback" class="mt-3"></div>
                 </aside>
             </div>
         </main>
@@ -185,6 +206,7 @@
             </aside>
         </footer>
     </div>
+    <script src="/static/seat-booking.js" defer></script>
     <script src="/static/theme-persist.js" defer></script>
 </body>
 
