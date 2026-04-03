@@ -23,6 +23,11 @@ use std::time::Duration;
 
 const HELLO_MESSAGE: &str = "Hello, world!";
 
+// Safety cap for long-lived SSE seat-map streams when the client
+// does not explicitly provide a `max_ticks` value.
+// At the default 2s interval this is ~5 minutes of updates.
+const DEFAULT_SEAT_MAP_MAX_TICKS: u64 = 150;
+
 /// `GET /` — Askama-rendered cinema shell.
 pub async fn cinema_index(State(state): State<SharedAppState>) -> Result<Html<String>, Error> {
     let id = uuid::Uuid::new_v4();
@@ -84,6 +89,15 @@ async fn seat_map_grid_html(state: &SharedAppState, movie_slug: &str, viewer: &s
     seat_grid_element_html(&movie, &merged.seats)
 }
 
+/// `GET /seat-map-snapshot` — one-off seat grid HTML for polling.
+pub async fn seat_map_snapshot(
+    State(state): State<SharedAppState>,
+    Query(params): Query<SeatMapSignals>,
+) -> Result<Html<String>, Error> {
+    let html = seat_map_grid_html(&state, &params.movie_slug, params.viewer.as_deref().unwrap_or_default()).await;
+    Ok(Html(html))
+}
+
 /// Datastar SSE: patches `#seatGrid` on an interval from merged bookings + Redis holds.
 pub async fn ds_seat_map(
     State(state): State<SharedAppState>,
@@ -93,7 +107,7 @@ pub async fn ds_seat_map(
     let movie_slug = signals.movie_slug;
     let viewer = signals.viewer.unwrap_or_default();
     let interval_ms = signals.interval_ms.max(50);
-    let max_ticks = signals.max_ticks;
+    let max_ticks = signals.max_ticks.unwrap_or(DEFAULT_SEAT_MAP_MAX_TICKS);
 
     let stream = stream! {
         let mut tick: u64 = 0;
@@ -101,10 +115,8 @@ pub async fn ds_seat_map(
             let html = seat_map_grid_html(&state, &movie_slug, &viewer).await;
             yield Ok::<Event, Infallible>(PatchElements::new(html).into());
             tick += 1;
-            if let Some(max) = max_ticks {
-                if tick >= max {
-                    break;
-                }
+            if tick >= max_ticks {
+                break;
             }
             tokio::time::sleep(Duration::from_millis(interval_ms)).await;
         }

@@ -106,7 +106,7 @@
 
             <ul class="mb-10 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3" id="movieList"
                 role="list" aria-label="Films"
-                data-on:click="$movie_slug = evt.target.closest('[data-movie-slug]')?.dataset?.movieSlug; if (!$movie_slug) return; document.getElementById('mainContent').classList.remove('hidden'); @post('/ds/seat-map')">
+                data-on:click="$movie_slug = evt.target.closest('[data-movie-slug]')?.dataset?.movieSlug; if (!$movie_slug) return; document.getElementById('mainContent').classList.remove('hidden'); @get('/seat-map-snapshot?movie_slug=' + encodeURIComponent($movie_slug) + '&viewer=' + encodeURIComponent($viewer))">
                 {% for movie in movies %}
                 <li role="listitem" data-movie-slug="{{ movie.slug }}"
                     class="min-w-0 rounded-box border border-base-300 bg-base-100 px-4 py-3">
@@ -125,6 +125,9 @@
             </ul>
 
             <div class="flex flex-wrap items-start gap-8 hidden" id="mainContent">
+                <div class="hidden"
+                    data-on-interval__throttle_2s="if (!$movie_slug) return; @get('/seat-map-snapshot?movie_slug=' + encodeURIComponent($movie_slug) + '&viewer=' + encodeURIComponent($viewer))">
+                </div>
                 <div
                     class="card card-border min-w-[min(100%,300px)] flex-1 border-base-300/80 bg-base-100/90 shadow-lg">
                     <div class="card-body items-center gap-0 pt-6">
