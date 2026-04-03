@@ -6,6 +6,6 @@ VALUES
 INSERT INTO movies
 (id, slug, title, row_count, seats_per_row)
 VALUES
-    (1, 'money-heist-1', 'Money Heist', 12, 18),
-    (2, 'fight-club-2', 'Fight Club', 8, 14),
-    (3, 'klaus-3', 'Klaus', 10, 16);
+    (1, 'money-heist-1', 'Money Heist', 6, 9),
+    (2, 'fight-club-2', 'Fight Club', 4, 7),
+    (3, 'klaus-3', 'Klaus', 5, 8);

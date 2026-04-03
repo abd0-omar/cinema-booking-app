@@ -103,6 +103,8 @@ pub trait SeatHoldStore: Send + Sync {
     /// Acquires a temporary seat hold session.
     ///
     /// Implementations should enforce single-winner semantics for a seat.
+    /// For a given `(movie_slug, user_uuid)`, there can be at most one active held seat at a time.
+    /// Holding a different seat for the same `(movie_slug, user_uuid)` should replace the previous hold.
     async fn hold(
         &self,
         changeset: SeatHoldChangeset,

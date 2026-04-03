@@ -194,7 +194,7 @@ pub fn seat_grid_element_html(movie: &Movie, seats: &[SeatStateDto]) -> String {
         }
 
         rows_html.push_str(&format!(
-            r#"<div class="flex w-full min-w-0 items-stretch gap-2 rounded-xl border border-base-300/50 bg-base-200/40 px-2 py-2 sm:gap-3 sm:px-3"><div class="flex w-9 shrink-0 items-center justify-center self-stretch rounded-lg border border-base-300/60 bg-base-100/90 font-display text-sm font-bold tabular-nums text-base-content/80 shadow-sm" aria-hidden="true">{row_name_html}</div><div class="min-w-0 flex-1 overflow-x-auto overscroll-x-contain"><div class="flex w-max items-center justify-start gap-1.5 sm:gap-2">{seats_html}</div></div></div>"#
+            r#"<div class="flex w-max max-w-full min-w-0 items-stretch gap-2 rounded-xl border border-base-300/50 bg-base-200/40 px-2 py-2 sm:gap-3 sm:px-3"><div class="flex w-9 shrink-0 items-center justify-center self-stretch rounded-lg border border-base-300/60 bg-base-100/90 font-display text-sm font-bold tabular-nums text-base-content/80 shadow-sm" aria-hidden="true">{row_name_html}</div><div class="flex flex-nowrap items-center justify-start gap-1.5 sm:gap-2">{seats_html}</div></div>"#
         ));
     }
 
@@ -204,7 +204,7 @@ pub fn seat_grid_element_html(movie: &Movie, seats: &[SeatStateDto]) -> String {
     ));
 
     format!(
-        r#"<div id="seatGrid" class="w-full max-w-3xl" role="group" aria-label="{map_label}"><div class="w-full rounded-box border border-base-300/60 bg-base-100/70 px-2 py-3 sm:px-4"><div class="flex flex-col gap-2 sm:gap-2.5">{rows_html}</div></div></div>"#
+        r#"<div id="seatGrid" class="w-max max-w-full" role="group" aria-label="{map_label}"><div class="w-full rounded-box border border-base-300/60 bg-base-100/70 px-2 py-3 sm:px-4"><div class="flex w-full flex-col items-stretch gap-2 sm:gap-2.5">{rows_html}</div></div></div>"#
     )
 }
 
