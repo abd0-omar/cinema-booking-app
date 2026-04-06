@@ -3,6 +3,7 @@ CREATE TABLE movies (
     id INTEGER PRIMARY KEY,
     slug TEXT NOT NULL UNIQUE,
     title TEXT NOT NULL,
+    movie_time TEXT NOT NULL,
     row_count INTEGER NOT NULL,
     seats_per_row INTEGER NOT NULL
 );

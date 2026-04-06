@@ -37,6 +37,7 @@ async fn test_get_movie_seats_layout_and_states(context: &DbTestContext) {
     let movie_slug = movies::create(
         MovieChangeset {
             title: "Seats API film".into(),
+            movie_time: "in 4 min".into(),
             row_count: 2,
             seats_per_row: 3,
         },
@@ -50,6 +51,10 @@ async fn test_get_movie_seats_layout_and_states(context: &DbTestContext) {
     let response = context.app.request(&uri).method(Method::GET).send().await;
     assert_that!(response.status(), eq(StatusCode::OK));
     let body: serde_json::Value = response.into_body().into_json().await;
+    assert_that!(
+        body["movie_time"].as_str().expect("movie_time"),
+        eq("in 4 min")
+    );
     let seats_arr = body["seats"].as_array().expect("seats");
     assert_that!(seats_arr, len(eq(6)));
 

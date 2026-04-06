@@ -41,6 +41,8 @@ pub struct Movie {
     /// URL-safe slug: slugified title plus numeric id (unique).
     pub slug: String,
     pub title: String,
+    /// Short display time label shown in the program list (for example `"in 5 min"`).
+    pub movie_time: String,
     /// Number of rows in the auditorium (JSON key `rows`).
     #[serde(rename = "rows")]
     pub row_count: i64,
@@ -56,6 +58,9 @@ pub struct MovieChangeset {
     #[cfg_attr(feature = "test-helpers", dummy(faker = "Sentence(3..8)"))]
     #[validate(length(min = 1))]
     pub title: String,
+    #[cfg_attr(feature = "test-helpers", dummy(faker = "Word()"))]
+    #[validate(length(min = 1, max = 32))]
+    pub movie_time: String,
     #[serde(rename = "rows")]
     #[validate(range(min = 1))]
     pub row_count: i64,
@@ -70,7 +75,7 @@ pub async fn load_all(
 ) -> Result<Vec<Movie>, crate::Error> {
     let rows = sqlx::query_as!(
         Movie,
-        r#"SELECT id, slug, title, row_count, seats_per_row FROM movies"#
+        r#"SELECT id, slug, title, movie_time, row_count, seats_per_row FROM movies"#
     )
     .fetch_all(executor)
     .await?;
@@ -84,7 +89,7 @@ pub async fn load(
 ) -> Result<Movie, crate::Error> {
     sqlx::query_as!(
         Movie,
-        r#"SELECT id as "id!", slug, title, row_count, seats_per_row FROM movies WHERE slug = ?1"#,
+        r#"SELECT id as "id!", slug, title, movie_time, row_count, seats_per_row FROM movies WHERE slug = ?1"#,
         slug
     )
     .fetch_optional(executor)
@@ -100,7 +105,7 @@ pub async fn load_by_id(
 ) -> Result<Movie, crate::Error> {
     sqlx::query_as!(
         Movie,
-        r#"SELECT id, slug, title, row_count, seats_per_row FROM movies WHERE id = ?1"#,
+        r#"SELECT id, slug, title, movie_time, row_count, seats_per_row FROM movies WHERE id = ?1"#,
         id
     )
     .fetch_optional(executor)
@@ -129,23 +134,32 @@ pub async fn delete(
 /// Create a [`Movie`] from a changeset (slug assigned after insert: `{slugify(title)}-{id}`).
 pub async fn create(movie: MovieChangeset, db_pool: &crate::DbPool) -> Result<Movie, crate::Error> {
     movie.validate()?;
+    let MovieChangeset {
+        title,
+        movie_time,
+        row_count,
+        seats_per_row,
+    } = movie;
 
     let mut tx = db_pool.begin().await.map_err(crate::Error::DbError)?;
     let temp_slug = format!("__tmp_{}", uuid::Uuid::new_v4());
+    let insert_title = title.clone();
+    let insert_movie_time = movie_time.clone();
 
     let result = sqlx::query!(
-        "INSERT INTO movies (slug, title, row_count, seats_per_row) VALUES (?1, ?2, ?3, ?4)",
+        "INSERT INTO movies (slug, title, movie_time, row_count, seats_per_row) VALUES (?1, ?2, ?3, ?4, ?5)",
         temp_slug,
-        movie.title,
-        movie.row_count,
-        movie.seats_per_row,
+        insert_title,
+        insert_movie_time,
+        row_count,
+        seats_per_row,
     )
     .execute(&mut *tx)
     .await
     .map_err(crate::Error::DbError)?;
 
     let id = result.last_insert_rowid();
-    let slug = movie_slug(&movie.title, id);
+    let slug = movie_slug(&title, id);
     sqlx::query!("UPDATE movies SET slug = ?1 WHERE id = ?2", slug, id)
         .execute(&mut *tx)
         .await
@@ -156,9 +170,10 @@ pub async fn create(movie: MovieChangeset, db_pool: &crate::DbPool) -> Result<Mo
     Ok(Movie {
         id,
         slug,
-        title: movie.title,
-        row_count: movie.row_count,
-        seats_per_row: movie.seats_per_row,
+        title,
+        movie_time,
+        row_count,
+        seats_per_row,
     })
 }
 
@@ -169,16 +184,24 @@ pub async fn update(
     db_pool: &crate::DbPool,
 ) -> Result<Movie, crate::Error> {
     movie.validate()?;
+    let MovieChangeset {
+        title,
+        movie_time,
+        row_count,
+        seats_per_row,
+    } = movie;
 
     let current = load(slug, db_pool).await?;
-    let new_slug = movie_slug(&movie.title, current.id);
+    let new_slug = movie_slug(&title, current.id);
+    let update_slug = new_slug.clone();
 
     let result = sqlx::query!(
-        "UPDATE movies SET slug = ?1, title = ?2, row_count = ?3, seats_per_row = ?4 WHERE slug = ?5",
-        new_slug,
-        movie.title,
-        movie.row_count,
-        movie.seats_per_row,
+        "UPDATE movies SET slug = ?1, title = ?2, movie_time = ?3, row_count = ?4, seats_per_row = ?5 WHERE slug = ?6",
+        update_slug,
+        title,
+        movie_time,
+        row_count,
+        seats_per_row,
         slug
     )
     .execute(db_pool)
@@ -191,7 +214,7 @@ pub async fn update(
 
     sqlx::query_as!(
         Movie,
-        r#"SELECT id as "id!", slug, title, row_count, seats_per_row FROM movies WHERE slug = ?1"#,
+        r#"SELECT id as "id!", slug, title, movie_time, row_count, seats_per_row FROM movies WHERE slug = ?1"#,
         new_slug
     )
     .fetch_one(db_pool)

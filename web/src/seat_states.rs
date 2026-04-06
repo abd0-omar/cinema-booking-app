@@ -33,6 +33,7 @@ pub struct MovieSeatsResponse {
     pub id: i64,
     pub slug: String,
     pub title: String,
+    pub movie_time: String,
     #[serde(rename = "rows")]
     pub row_count: i64,
     #[serde(rename = "seats_per_rows")]
@@ -100,6 +101,7 @@ pub async fn merge_movie_seats(
         id: movie.id,
         slug: movie.slug.clone(),
         title: movie.title.clone(),
+        movie_time: movie.movie_time.clone(),
         row_count: movie.row_count,
         seats_per_row: movie.seats_per_row,
         seats,

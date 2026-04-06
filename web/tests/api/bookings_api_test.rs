@@ -38,6 +38,7 @@ async fn test_bookings_hold_checkout_list_happy_path(context: &DbTestContext) {
     let movie_slug = movies::create(
         MovieChangeset {
             title: "API test movie".into(),
+            movie_time: "in 5 min".into(),
             row_count: 10,
             seats_per_row: 10,
         },
@@ -115,6 +116,7 @@ async fn test_bookings_hold_switches_to_latest_seat_for_same_user(context: &DbTe
     let movie_slug = movies::create(
         MovieChangeset {
             title: "API switch seat movie".into(),
+            movie_time: "in 8 min".into(),
             row_count: 10,
             seats_per_row: 10,
         },

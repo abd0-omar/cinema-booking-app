@@ -22,6 +22,7 @@ type MoviesList = Vec<Movie>;
 fn sample_movie_cs() -> MovieChangeset {
     MovieChangeset {
         title: format!("Movie {}", Uuid::new_v4()),
+        movie_time: "in 7 min".into(),
         row_count: 10,
         seats_per_row: 12,
     }
@@ -44,6 +45,7 @@ async fn test_create_unauthorized(context: &DbTestContext) {
 async fn test_create_forbidden(context: &DbTestContext) {
     let payload = json!({
         "title": "No admin",
+        "movie_time": "in 5 min",
         "rows": 1,
         "seats_per_rows": 1,
     });
@@ -65,6 +67,7 @@ async fn test_create_forbidden(context: &DbTestContext) {
 async fn test_create_invalid(context: &DbTestContext) {
     let payload = json!({
         "title": "",
+        "movie_time": "in 5 min",
         "rows": 1,
         "seats_per_rows": 1,
     });
@@ -86,11 +89,13 @@ async fn test_create_invalid(context: &DbTestContext) {
 async fn test_create_success(context: &DbTestContext) {
     let cs = MovieChangeset {
         title: "Integration Movie".into(),
+        movie_time: "in 5 min".into(),
         row_count: 10,
         seats_per_row: 12,
     };
     let payload = json!({
         "title": cs.title,
+        "movie_time": cs.movie_time,
         "rows": cs.row_count,
         "seats_per_rows": cs.seats_per_row,
     });
@@ -111,6 +116,7 @@ async fn test_create_success(context: &DbTestContext) {
     assert_that!(movies, len(eq(1)));
     let row = movies.first().unwrap();
     assert_that!(row.title, eq(&cs.title));
+    assert_that!(row.movie_time, eq(&cs.movie_time));
     assert_that!(row.row_count, eq(cs.row_count));
     assert_that!(row.seats_per_row, eq(cs.seats_per_row));
     assert_that!(row.slug, eq("integration-movie-1"));
@@ -133,6 +139,7 @@ async fn test_read_all(context: &DbTestContext) {
     let list: MoviesList = response.into_body().into_json::<MoviesList>().await;
     assert_that!(list, len(eq(1)));
     assert_that!(list.first().unwrap().title, eq(&cs.title));
+    assert_that!(list.first().unwrap().movie_time, eq(&cs.movie_time));
 }
 
 #[db_test]
@@ -165,6 +172,7 @@ async fn test_read_one_success(context: &DbTestContext) {
     let got: Movie = response.into_body().into_json::<Movie>().await;
     assert_that!(got.slug, eq(&slug));
     assert_that!(got.title, eq(&cs.title));
+    assert_that!(got.movie_time, eq(&cs.movie_time));
 }
 
 #[db_test]
@@ -178,7 +186,9 @@ async fn test_update_unauthorized(context: &DbTestContext) {
         .request(format!("/movies/{}", movie.slug).as_str())
         .method(Method::PUT)
         .header(http::header::CONTENT_TYPE, "application/json")
-        .body(Body::from(r#"{"title":"x","rows":1,"seats_per_rows":1}"#))
+        .body(Body::from(
+            r#"{"title":"x","movie_time":"in 5 min","rows":1,"seats_per_rows":1}"#,
+        ))
         .send()
         .await;
 
@@ -196,7 +206,9 @@ async fn test_update_forbidden(context: &DbTestContext) {
         .request(format!("/movies/{}", movie.slug).as_str())
         .method(Method::PUT)
         .header(http::header::CONTENT_TYPE, "application/json")
-        .body(Body::from(r#"{"title":"x","rows":1,"seats_per_rows":1}"#))
+        .body(Body::from(
+            r#"{"title":"x","movie_time":"in 5 min","rows":1,"seats_per_rows":1}"#,
+        ))
         .header(http::header::AUTHORIZATION, TEST_USER_AUTH)
         .send()
         .await;
@@ -211,6 +223,7 @@ async fn test_update_invalid(context: &DbTestContext) {
 
     let payload = json!({
         "title": "",
+        "movie_time": "in 5 min",
         "rows": 1,
         "seats_per_rows": 1,
     });
@@ -235,11 +248,13 @@ async fn test_update_invalid(context: &DbTestContext) {
 async fn test_update_nonexistent(context: &DbTestContext) {
     let cs = MovieChangeset {
         title: "Nope".into(),
+        movie_time: "in 5 min".into(),
         row_count: 1,
         seats_per_row: 1,
     };
     let payload = json!({
         "title": cs.title,
+        "movie_time": cs.movie_time,
         "rows": cs.row_count,
         "seats_per_rows": cs.seats_per_row,
     });
@@ -264,11 +279,13 @@ async fn test_update_success(context: &DbTestContext) {
         .unwrap();
     let next = MovieChangeset {
         title: "Updated title".into(),
+        movie_time: "in 9 min".into(),
         row_count: 20,
         seats_per_row: 24,
     };
     let payload = json!({
         "title": next.title,
+        "movie_time": next.movie_time,
         "rows": next.row_count,
         "seats_per_rows": next.seats_per_row,
     });
@@ -289,6 +306,7 @@ async fn test_update_success(context: &DbTestContext) {
     let expected_slug = format!("updated-title-{}", movie.id);
     assert_that!(&got.slug, eq(&expected_slug));
     assert_that!(got.title, eq(&next.title));
+    assert_that!(got.movie_time, eq(&next.movie_time));
     assert_that!(got.row_count, eq(next.row_count));
     assert_that!(got.seats_per_row, eq(next.seats_per_row));
 }

@@ -30,7 +30,7 @@ POST {{api_base_url}}/movies
 Authorization: Bearer {{auth_token}}
 Content-Type: application/json
 
-{"title":"","rows":1,"seats_per_rows":1}
+{"title":"","movie_time":"in 5 min","rows":1,"seats_per_rows":1}
 HTTP 422
 
 # Create movie → 201, capture slug
@@ -38,12 +38,13 @@ POST {{api_base_url}}/movies
 Authorization: Bearer {{auth_token}}
 Content-Type: application/json
 
-{"title":"Hurl Trailbase movie","rows":14,"seats_per_rows":22}
+{"title":"Hurl Trailbase movie","movie_time":"in 5 min","rows":14,"seats_per_rows":22}
 HTTP 201
 [Captures]
 slug: jsonpath "$.slug"
 [Asserts]
 jsonpath "$.title" == "Hurl Trailbase movie"
+jsonpath "$.movie_time" == "in 5 min"
 jsonpath "$.rows" == 14
 jsonpath "$.seats_per_rows" == 22
 jsonpath "$.slug" exists
@@ -54,13 +55,14 @@ HTTP 200
 [Asserts]
 jsonpath "$.slug" == "{{slug}}"
 jsonpath "$.title" == "Hurl Trailbase movie"
+jsonpath "$.movie_time" == "in 5 min"
 jsonpath "$.rows" == 14
 
 # Update without auth → 401
 PUT {{api_base_url}}/movies/{{slug}}
 Content-Type: application/json
 
-{"title":"Should not apply","rows":1,"seats_per_rows":1}
+{"title":"Should not apply","movie_time":"in 5 min","rows":1,"seats_per_rows":1}
 HTTP 401
 
 # Update with auth → 200 (slug recomputed from new title; same id)
@@ -68,12 +70,13 @@ PUT {{api_base_url}}/movies/{{slug}}
 Authorization: Bearer {{auth_token}}
 Content-Type: application/json
 
-{"title":"Hurl Trailbase movie updated","rows":16,"seats_per_rows":20}
+{"title":"Hurl Trailbase movie updated","movie_time":"in 8 min","rows":16,"seats_per_rows":20}
 HTTP 200
 [Captures]
 slug: jsonpath "$.slug"
 [Asserts]
 jsonpath "$.title" == "Hurl Trailbase movie updated"
+jsonpath "$.movie_time" == "in 8 min"
 jsonpath "$.rows" == 16
 jsonpath "$.seats_per_rows" == 20
 

@@ -32,9 +32,11 @@ async fn test_get_index_html(context: &DbTestContext) {
 #[db_test]
 async fn test_get_index_lists_seeded_movie(context: &DbTestContext) {
     let title = format!("Index marquee film {}", Uuid::new_v4());
+    let movie_time = "in 3 min";
     let movie = create_movie(
         MovieChangeset {
             title: title.clone(),
+            movie_time: movie_time.into(),
             row_count: 5,
             seats_per_row: 8,
         },
@@ -48,6 +50,7 @@ async fn test_get_index_lists_seeded_movie(context: &DbTestContext) {
     let body = response.into_body().into_bytes().await;
     let html = String::from_utf8(body.to_vec()).expect("utf8");
     assert_that!(html, contains_substring(title.as_str()));
+    assert_that!(html, contains_substring(movie_time));
     assert_that!(
         html,
         contains_substring(format!(r#"data-movie-slug="{}""#, movie.slug).as_str())
@@ -176,6 +179,7 @@ async fn test_ds_seat_map_sse_post(context: &DbTestContext) {
     let movie = create_movie(
         MovieChangeset {
             title: "SSE seat map film".into(),
+            movie_time: "in 2 min".into(),
             row_count: 2,
             seats_per_row: 2,
         },

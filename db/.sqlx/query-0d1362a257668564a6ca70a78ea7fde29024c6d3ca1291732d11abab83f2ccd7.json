@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, slug, title, row_count, seats_per_row FROM movies WHERE id = ?1",
+  "query": "SELECT id as \"id!\", slug, title, movie_time, row_count, seats_per_row FROM movies WHERE slug = ?1",
   "describe": {
     "columns": [
       {
-        "name": "id",
+        "name": "id!",
         "ordinal": 0,
         "type_info": "Integer"
       },
@@ -19,13 +19,18 @@
         "type_info": "Text"
       },
       {
-        "name": "row_count",
+        "name": "movie_time",
         "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "row_count",
+        "ordinal": 4,
         "type_info": "Integer"
       },
       {
         "name": "seats_per_row",
-        "ordinal": 4,
+        "ordinal": 5,
         "type_info": "Integer"
       }
     ],
@@ -33,6 +38,7 @@
       "Right": 1
     },
     "nullable": [
+      true,
       false,
       false,
       false,
@@ -40,5 +46,5 @@
       false
     ]
   },
-  "hash": "a285ac6f2a1e7cc0d17a617be99b5b06c65c22516f1a54590caaac357e343bca"
+  "hash": "0d1362a257668564a6ca70a78ea7fde29024c6d3ca1291732d11abab83f2ccd7"
 }

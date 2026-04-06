@@ -18,6 +18,7 @@ async fn seed_user_uuid(pool: &cinema_booking_db::DbPool) -> String {
 async fn seed_movie_slug(pool: &cinema_booking_db::DbPool) -> String {
     let cs = MovieChangeset {
         title: format!("movie-{}", Uuid::new_v4()),
+        movie_time: "in 6 min".into(),
         row_count: 10,
         seats_per_row: 12,
     };
